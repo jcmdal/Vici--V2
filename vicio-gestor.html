@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Viciô · Gestor do Evento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --coral:#F2544C;--coral-dark:#D63F38;--cream:#FCF3EA;--cream-2:#FFFFFF;
+  --choc:#3A2317;--choc-soft:#7A5B4C;--gold:#E3A23D;--gold-soft:#F7DDB0;
+  --pink:#FAD4CE;--green:#3E8E5A;--red-alert:#C6423B;--line:#EEE0D3;
+  --shadow:0 6px 20px rgba(58,35,23,.08);--radius:18px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--cream);color:var(--choc);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:86px;min-height:100vh;}
+h1,h2,h3,.display{font-family:'Fredoka',sans-serif;}
+button{font-family:inherit;}
+header.top{background:var(--coral);color:#fff;padding:18px 18px 22px;border-radius:0 0 26px 26px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+header.top::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);}
+.brandrow{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.brandname{font-family:'Fredoka',sans-serif;font-weight:700;font-size:26px;display:flex;align-items:center;gap:8px;}
+.daypicker{display:flex;gap:6px;background:rgba(255,255,255,.15);padding:4px;border-radius:14px;}
+.daypicker button{border:none;background:transparent;color:#fff;padding:7px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;opacity:.75;}
+.daypicker button.active{background:#fff;color:var(--coral-dark);opacity:1;}
+.stat-strip{display:flex;gap:10px;margin-top:16px;overflow-x:auto;padding-bottom:2px;}
+.stat-pill{background:rgba(255,255,255,.14);border-radius:14px;padding:10px 14px;min-width:110px;flex:1;}
+.stat-pill .lbl{font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.4px;}
+.stat-pill .val{font-family:'Fredoka',sans-serif;font-size:19px;font-weight:600;margin-top:2px;}
+/* sync indicator */
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#fff;opacity:.5;display:inline-block;margin-left:8px;vertical-align:middle;transition:.3s;}
+.sync-dot.syncing{opacity:1;animation:pulse .8s infinite;}
+.sync-dot.ok{background:#6effa0;opacity:1;}
+.sync-dot.err{background:#ff8080;opacity:1;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.4);}}
+main{padding:16px 16px 24px;max-width:720px;margin:0 auto;}
+.tabview{display:none;}
+.tabview.active{display:block;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--cream-2);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:14px;border:1px solid var(--line);}
+.card h2{margin:0 0 12px;font-size:17px;color:var(--choc);}
+.muted{color:var(--choc-soft);font-size:13px;}
+nav.bottom{position:fixed;bottom:0;left:0;right:0;background:var(--cream-2);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:50;box-shadow:0 -4px 16px rgba(58,35,23,.06);}
+nav.bottom button{flex:1;background:none;border:none;padding:8px 2px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--choc-soft);font-size:11px;font-weight:600;cursor:pointer;}
+nav.bottom button .ic{font-size:19px;line-height:1;}
+nav.bottom button.active{color:var(--coral-dark);background:var(--pink);}
+.flavor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.flavor-card{border:2px solid var(--line);border-radius:16px;padding:12px;cursor:pointer;text-align:left;background:var(--cream-2);transition:.15s;}
+.flavor-card.selected{border-color:var(--coral);background:var(--pink);}
+.flavor-card .fname{font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;}
+.flavor-card .fprice{color:var(--coral-dark);font-weight:700;font-size:14px;margin-top:2px;}
+.flavor-card .fstock{font-size:11px;color:var(--choc-soft);margin-top:6px;}
+.flavor-card .fstock.low{color:var(--red-alert);font-weight:700;}
+.qty-row{display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0;}
+.qty-btn{width:44px;height:44px;border-radius:50%;border:none;background:var(--coral);color:#fff;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.qty-num{font-family:'Fredoka',sans-serif;font-size:30px;font-weight:600;min-width:44px;text-align:center;}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.pay-btn{border:2px solid var(--line);background:var(--cream-2);border-radius:12px;padding:10px 4px;font-weight:600;font-size:13px;cursor:pointer;color:var(--choc);}
+.pay-btn.selected{border-color:var(--coral);background:var(--pink);color:var(--coral-dark);}
+.discount-row{display:flex;gap:8px;align-items:center;margin-top:10px;}
+.totalbar{display:flex;justify-content:space-between;align-items:center;background:var(--choc);color:#fff;border-radius:14px;padding:14px 16px;margin-top:12px;}
+.totalbar .tlabel{font-size:12px;opacity:.75;}
+.totalbar .tval{font-family:'Fredoka',sans-serif;font-size:24px;font-weight:600;}
+.btn-confirm{width:100%;margin-top:12px;background:var(--green);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:700;font-family:'Fredoka',sans-serif;cursor:pointer;}
+.btn-confirm:disabled{background:#c8c2ba;cursor:not-allowed;}
+.sale-log{max-height:220px;overflow-y:auto;}
+.sale-item{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;}
+.sale-item:last-child{border:none;}
+.sale-item button{background:none;border:none;color:var(--red-alert);font-size:12px;cursor:pointer;padding:2px 6px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--choc-soft);margin:10px 0 4px;}
+input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);font-family:inherit;font-size:14px;background:var(--cream-2);color:var(--choc);}
+input:focus,select:focus{outline:none;border-color:var(--coral);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.btn{border:none;border-radius:12px;padding:11px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Fredoka',sans-serif;}
+.btn-primary{background:var(--coral);color:#fff;}
+.btn-outline{background:transparent;border:1.5px solid var(--coral);color:var(--coral-dark);}
+.btn-ghost{background:var(--cream);color:var(--choc-soft);border:1px solid var(--line);}
+.btn-sm{padding:7px 11px;font-size:12px;}
+.ing-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);}
+.ing-item:last-child{border:none;}
+.ing-name{font-weight:600;font-size:14px;}
+.ing-meta{font-size:11.5px;color:var(--choc-soft);margin-top:2px;}
+.bar-bg{width:70px;height:7px;border-radius:5px;background:var(--line);overflow:hidden;margin-top:5px;}
+.bar-fill{height:100%;border-radius:5px;background:var(--green);}
+.bar-fill.low{background:var(--red-alert);}
+.tag-low{background:#FBE3E1;color:var(--red-alert);font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:6px;}
+.recipe-tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.recipe-tabs button{border:1.5px solid var(--line);background:var(--cream-2);border-radius:12px;padding:8px 13px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--choc-soft);}
+.recipe-tabs button.active{border-color:var(--coral);color:var(--coral-dark);background:var(--pink);}
+.mini-table{width:100%;border-collapse:collapse;font-size:13px;}
+.mini-table th{text-align:left;color:var(--choc-soft);font-size:11px;text-transform:uppercase;padding:4px;border-bottom:1.5px solid var(--line);}
+.mini-table td{padding:8px 4px;border-bottom:1px solid var(--line);}
+.price-box{background:var(--cream);border-radius:14px;padding:14px;margin-top:12px;border:1.5px dashed var(--gold);}
+.price-line{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;}
+.price-line.total{font-weight:800;font-size:15px;border-top:1.5px solid var(--line);margin-top:6px;padding-top:8px;}
+.price-line .suggested{color:var(--green);font-weight:800;}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.kpi{background:var(--cream-2);border-radius:16px;padding:14px;border:1px solid var(--line);box-shadow:var(--shadow);}
+.kpi .kl{font-size:11px;color:var(--choc-soft);text-transform:uppercase;letter-spacing:.3px;}
+.kpi .kv{font-family:'Fredoka',sans-serif;font-size:22px;font-weight:600;margin-top:3px;}
+.kpi .kv.pos{color:var(--green);}
+.kpi .kv.neg{color:var(--red-alert);}
+.chart-wrap{position:relative;height:220px;margin-top:4px;}
+.empty{text-align:center;color:var(--choc-soft);padding:26px 10px;font-size:13px;}
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--choc);color:#fff;padding:11px 20px;border-radius:30px;font-size:13.5px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:100;opacity:0;pointer-events:none;transition:.25s;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+.section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--choc-soft);margin:18px 0 8px 2px;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;}
+.small-note{font-size:11.5px;color:var(--choc-soft);margin-top:6px;line-height:1.5;}
+/* loading overlay */
+#loadingOverlay{position:fixed;inset:0;background:var(--coral);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;color:#fff;gap:12px;}
+#loadingOverlay .spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#loadingOverlay p{font-family:'Fredoka',sans-serif;font-size:18px;}
+#loadingOverlay.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="spin"></div>
+  <p>Conectando ao Viciô…</p>
+</div>
+
+<header class="top">
+  <div class="brandrow">
+    <div class="brandname">
+      🍰 Viciô · Gestor
+      <span class="sync-dot" id="syncDot" title="Status da sincronização"></span>
+    </div>
+    <div class="daypicker" id="dayPicker"></div>
+  </div>
+  <div class="stat-strip" id="statStrip"></div>
+</header>
+
+<main>
+  <!-- VENDER -->
+  <div class="tabview" id="tab-vender">
+    <div class="card">
+      <h2>Nova venda</h2>
+      <div class="flavor-grid" id="flavorGrid"></div>
+      <div class="qty-row">
+        <button class="qty-btn" id="qtyMinus">−</button>
+        <div class="qty-num" id="qtyNum">1</div>
+        <button class="qty-btn" id="qtyPlus">+</button>
+      </div>
+      <label>Forma de pagamento</label>
+      <div class="pay-grid" id="payGrid"></div>
+      <div class="discount-row">
+        <label style="margin:10px 0 0;flex-shrink:0;">Desconto R$</label>
+        <input type="number" id="discountInput" min="0" step="0.5" value="0">
+      </div>
+      <div class="totalbar">
+        <div><div class="tlabel">Total da venda</div><div class="tval" id="saleTotal">R$ 0,00</div></div>
+        <div style="text-align:right;"><div class="tlabel" id="saleQtyLabel">0 fatia(s)</div></div>
+      </div>
+      <button class="btn-confirm" id="confirmSale" disabled>Registrar venda ✓</button>
+    </div>
+    <div class="card">
+      <div class="flex-between">
+        <h2 style="margin:0;">Vendas de hoje</h2>
+        <span class="muted" id="todayCount">0 vendas</span>
+      </div>
+      <div class="sale-log" id="saleLog"></div>
+    </div>
+  </div>
+
+  <!-- ESTOQUE -->
+  <div class="tabview" id="tab-estoque">
+    <div class="card">
+      <div class="flex-between">
+        <h2 style="margin:0;">Ingredientes em estoque</h2>
+        <button class="btn btn-primary btn-sm" id="addIngBtn">+ Ingrediente</button>
+      </div>
+      <div id="ingList"></div>
+    </div>
+    <div class="card" id="ingFormCard" style="display:none;">
+      <h2 id="ingFormTitle">Novo ingrediente</h2>
+      <label>Nome</label><input id="ingNome" placeholder="Ex: Chocolate 70%">
+      <div class="row2">
+        <div><label>Unidade</label><select id="ingUnidade"><option value="g">g</option><option value="ml">ml</option><option value="un">unidade</option></select></div>
+        <div><label>Custo por unidade (R$)</label><input id="ingCusto" type="number" step="0.001" placeholder="0,00"></div>
+      </div>
+      <div class="row2">
+        <div><label>Estoque atual</label><input id="ingEstoque" type="number" step="0.1" placeholder="0"></div>
+        <div><label>Estoque mínimo (alerta)</label><input id="ingMinimo" type="number" step="0.1" placeholder="0"></div>
+      </div>
+      <label>Fornecedor (opcional)</label><input id="ingFornecedor" placeholder="Ex: Mercado São José">
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-primary" id="saveIngBtn" style="flex:1;">Salvar</button>
+        <button class="btn btn-ghost" id="cancelIngBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECEITAS -->
+  <div class="tabview" id="tab-receitas">
+    <div class="card">
+      <h2>Fichas técnicas</h2>
+      <div class="recipe-tabs" id="recipeTabs"></div>
+      <div id="recipeBody"></div>
+    </div>
+  </div>
+
+  <!-- PAINEL -->
+  <div class="tabview" id="tab-painel">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kl">Faturamento (evento)</div><div class="kv" id="kpiFat">R$ 0</div></div>
+      <div class="kpi"><div class="kl">Lucro líquido</div><div class="kv" id="kpiLucro">R$ 0</div></div>
+      <div class="kpi"><div class="kl">Fatias vendidas</div><div class="kv" id="kpiFatias">0</div></div>
+      <div class="kpi"><div class="kl">ROI sobre investimento</div><div class="kv" id="kpiRoi">0%</div></div>
+    </div>
+    <div class="card"><h2>Vendas por sabor</h2><div class="chart-wrap"><canvas id="chartSabor"></canvas></div></div>
+    <div class="card"><h2>Evolução ao longo dos dias</h2><div class="chart-wrap"><canvas id="chartDias"></canvas></div></div>
+    <div class="card"><h2>Margem de lucro por sabor</h2><div class="chart-wrap"><canvas id="chartMargem"></canvas></div></div>
+    <div class="card"><h2>Estoque: consumido vs. restante</h2><div class="chart-wrap"><canvas id="chartEstoque"></canvas></div></div>
+  </div>
+
+  <!-- AJUSTES -->
+  <div class="tabview" id="tab-ajustes">
+    <div class="card">
+      <h2>Investimento inicial</h2>
+      <label>Valor total investido (R$)</label>
+      <input id="investTotal" type="number" step="1">
+      <div class="section-title">Alocação por compra</div>
+      <div id="investList"></div>
+      <div class="row3" style="margin-top:6px;">
+        <input id="invItem" placeholder="Item">
+        <input id="invValor" type="number" step="0.5" placeholder="R$">
+        <button class="btn btn-primary btn-sm" id="addInvBtn">Add</button>
+      </div>
+      <div class="small-note" id="investBalance"></div>
+    </div>
+    <div class="card">
+      <h2>Custos fixos e margem</h2>
+      <div class="row2">
+        <div><label>Custos fixos (%)</label><input id="custosFixos" type="number" step="1"></div>
+        <div><label>Margem de lucro (%)</label><input id="margemLucro" type="number" step="1"></div>
+      </div>
+      <p class="small-note">Custos fixos cobrem gás, energia, embalagem e mão de obra. Esses percentuais entram no cálculo de preço sugerido nas fichas técnicas.</p>
+    </div>
+    <div class="card">
+      <h2>Banco de dados</h2>
+      <p class="small-note">Todos os dados são salvos automaticamente no Supabase. O indicador <span style="background:#6effa0;padding:2px 6px;border-radius:8px;font-size:11px;">●</span> no topo confirma a sincronização.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn btn-outline btn-sm" id="exportCsv">Exportar vendas (.csv)</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<nav class="bottom">
+  <button data-tab="vender" class="active"><span class="ic">🧾</span>Vender</button>
+  <button data-tab="estoque"><span class="ic">🥣</span>Estoque</button>
+  <button data-tab="receitas"><span class="ic">📋</span>Receitas</button>
+  <button data-tab="painel"><span class="ic">📊</span>Painel</button>
+  <button data-tab="ajustes"><span class="ic">⚙️</span>Ajustes</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIGURAÇÃO SUPABASE
+   Substitua as duas constantes abaixo com os valores do seu projeto
+   Project Settings → API no dashboard do Supabase
+   ============================================================ */
+const SUPA_URL  = "https://mcjowmfbxxwrjfrlaeyt.supabase.co";       // ex: https://mcjowmfbxxwrjfrlaeyt.supabase.co
+const SUPA_ANON = "sb_publishable_ipFHurMAawkVItILpwhROw_hE2T2Ebu";          // começa com eyJ...
+
+/* ============================================================
+   CAMADA DE ACESSO AO SUPABASE (REST direto, sem SDK)
+   ============================================================ */
+const headers = {
+  "Content-Type": "application/json",
+  "apikey": SUPA_ANON,
+  "Authorization": "Bearer " + SUPA_ANON,
+  "Prefer": "return=representation"
+};
+
+async function sbGet(table, params=""){
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {headers});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbInsert(table, body){
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {method:"POST", headers, body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbUpdate(table, match, body){
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${match}`, {method:"PATCH", headers, body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbDelete(table, match){
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${match}`, {method:"DELETE", headers});
+  if(!r.ok) throw new Error(await r.text());
+}
+async function sbUpsert(table, body, onConflict="id"){
+  const h = {...headers, "Prefer":"resolution=merge-duplicates,return=representation"};
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {method:"POST", headers:h, body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function getConfig(key){ const rows = await sbGet("config",`key=eq.${key}&select=value`); return rows[0]?.value; }
+async function setConfig(key, value){ await sbUpsert("config",{key, value},"key"); }
+
+/* ============================================================
+   ESTADO LOCAL (cache em memória, não em localStorage)
+   ============================================================ */
+let DB = {
+  dias: ["Sexta","Sábado","Domingo"],
+  diaAtual: 0,
+  config: { custosFixosPct: 15, margemLucroPct: 50 },
+  investimento: { total: 280, itens: [] },
+  ingredientes: [],
+  receitas: [],
+  vendas: []
+};
+
+/* ============================================================
+   SINCRONIZAÇÃO: CARREGAR TUDO DO SUPABASE
+   ============================================================ */
+async function loadAll(){
+  setSyncState("syncing");
+  const [ings, recs, vendas, cfgDias, cfgDia, cfgCF, cfgML, cfgIT, investItens] = await Promise.all([
+    sbGet("ingredientes","select=*&order=nome"),
+    sbGet("receitas","select=*"),
+    sbGet("vendas","select=*&order=created_at"),
+    getConfig("dias"),
+    getConfig("dia_atual"),
+    getConfig("custos_fixos"),
+    getConfig("margem_lucro"),
+    getConfig("invest_total"),
+    sbGet("investimento_itens","select=*")
+  ]);
+  DB.ingredientes = ings;
+  DB.receitas = recs.map(r=>({ ...r, ingredientes: typeof r.ingredientes==="string"?JSON.parse(r.ingredientes):r.ingredientes }));
+  DB.vendas = vendas.map(v=>({ ...v, sabor:v.sabor, saborNome:v.sabor_nome, valorUnit:v.valor_unit }));
+  DB.dias = cfgDias || ["Sexta","Sábado","Domingo"];
+  DB.diaAtual = Number(cfgDia)||0;
+  DB.config.custosFixosPct = Number(cfgCF)||15;
+  DB.config.margemLucroPct = Number(cfgML)||50;
+  DB.investimento.total = Number(cfgIT)||280;
+  DB.investimento.itens = investItens;
+  setSyncState("ok");
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const fmt = n => "R$ " + (Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const uid = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now();
+
+function setSyncState(s){
+  const dot = document.getElementById("syncDot");
+  dot.className = "sync-dot " + s;
+}
+
+function toast(msg, isErr=false){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isErr ? "var(--red-alert)" : "var(--choc)";
+  t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+function recipeCost(r){
+  let total=0;
+  (r.ingredientes||[]).forEach(ri=>{
+    const ing = DB.ingredientes.find(i=>i.id===ri.ing);
+    if(ing) total += ing.custo * ri.qtd;
+  });
+  const withFixed = total*(1+DB.config.custosFixosPct/100);
+  const perSlice = withFixed/r.rendimento;
+  const suggested = perSlice*(1+DB.config.margemLucroPct/100);
+  return {rawTotal:total, totalWithFixed:withFixed, perSlice, suggested};
+}
+
+function stockForFlavor(recipeId){
+  const r = DB.receitas.find(x=>x.id===recipeId);
+  if(!r) return 0;
+  let maxBatches = Infinity;
+  (r.ingredientes||[]).forEach(ri=>{
+    const ing = DB.ingredientes.find(i=>i.id===ri.ing);
+    if(ing && ri.qtd>0) maxBatches = Math.min(maxBatches, ing.estoque/ri.qtd);
+  });
+  return maxBatches===Infinity?0:Math.floor(maxBatches*r.rendimento);
+}
+
+function slicesSoldFor(recipeId, diaIndex=null){
+  return DB.vendas.filter(v=>v.sabor===recipeId&&(diaIndex===null||v.dia===diaIndex))
+    .reduce((s,v)=>s+v.qtd,0);
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+document.querySelectorAll('nav.bottom button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('nav.bottom button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tabview').forEach(t=>t.classList.remove('active'));
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='painel') renderPainel();
+    if(btn.dataset.tab==='ajustes') renderAjustes();
+  });
+});
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+function renderHeader(){
+  const dp = document.getElementById('dayPicker');
+  dp.innerHTML = DB.dias.map((d,i)=>`<button data-d="${i}" class="${i===DB.diaAtual?'active':''}">${d}</button>`).join('');
+  dp.querySelectorAll('button').forEach(b=>b.addEventListener('click', async ()=>{
+    DB.diaAtual = Number(b.dataset.d);
+    setSyncState("syncing");
+    await setConfig("dia_atual", DB.diaAtual);
+    setSyncState("ok");
+    renderAll();
+  }));
+  const vendasHoje = DB.vendas.filter(v=>v.dia===DB.diaAtual);
+  const fatHoje = vendasHoje.reduce((s,v)=>s+v.subtotal,0);
+  const fatiasHoje = vendasHoje.reduce((s,v)=>s+v.qtd,0);
+  const fatTotal = DB.vendas.reduce((s,v)=>s+v.subtotal,0);
+  const fatiasTotal = DB.vendas.reduce((s,v)=>s+v.qtd,0);
+  document.getElementById('statStrip').innerHTML = `
+    <div class="stat-pill"><div class="lbl">Hoje</div><div class="val">${fmt(fatHoje)}</div></div>
+    <div class="stat-pill"><div class="lbl">Fatias hoje</div><div class="val">${fatiasHoje}</div></div>
+    <div class="stat-pill"><div class="lbl">Total evento</div><div class="val">${fmt(fatTotal)}</div></div>
+    <div class="stat-pill"><div class="lbl">Fatias total</div><div class="val">${fatiasTotal}</div></div>`;
+}
+
+/* ============================================================
+   VENDER (PDV)
+   ============================================================ */
+let currentSale = {sabor:null, qtd:1, pagamento:null, desconto:0};
+
+function renderFlavorGrid(){
+  const grid = document.getElementById('flavorGrid');
+  grid.innerHTML = DB.receitas.map(r=>{
+    const stock = stockForFlavor(r.id);
+    const low = stock<=5;
+    return `<button class="flavor-card ${currentSale.sabor===r.id?'selected':''}" data-id="${r.id}">
+      <div class="fname">${r.nome}</div>
+      <div class="fprice">${fmt(r.preco_venda||r.precoVenda)} / fatia</div>
+      <div class="fstock ${low?'low':''}">${stock} fatias possíveis${low?' · baixo!':''}</div>
+    </button>`;
+  }).join('');
+  grid.querySelectorAll('.flavor-card').forEach(c=>c.addEventListener('click',()=>{
+    currentSale.sabor=c.dataset.id; renderFlavorGrid(); updateSaleTotal();
+  }));
+}
+
+function renderPayGrid(){
+  const opts=[{id:'dinheiro',label:'💵 Dinheiro'},{id:'cartao',label:'💳 Cartão'},{id:'pix',label:'📱 Pix'}];
+  document.getElementById('payGrid').innerHTML = opts.map(o=>
+    `<button class="pay-btn ${currentSale.pagamento===o.id?'selected':''}" data-id="${o.id}">${o.label}</button>`).join('');
+  document.querySelectorAll('.pay-btn').forEach(b=>b.addEventListener('click',()=>{
+    currentSale.pagamento=b.dataset.id; renderPayGrid(); updateSaleTotal();
+  }));
+}
+
+document.getElementById('qtyMinus').addEventListener('click',()=>{ currentSale.qtd=Math.max(1,currentSale.qtd-1); document.getElementById('qtyNum').textContent=currentSale.qtd; updateSaleTotal(); });
+document.getElementById('qtyPlus').addEventListener('click',()=>{ currentSale.qtd+=1; document.getElementById('qtyNum').textContent=currentSale.qtd; updateSaleTotal(); });
+document.getElementById('discountInput').addEventListener('input',e=>{ currentSale.desconto=Number(e.target.value)||0; updateSaleTotal(); });
+
+function updateSaleTotal(){
+  const r = DB.receitas.find(x=>x.id===currentSale.sabor);
+  const unit = r?(r.preco_venda||r.precoVenda):0;
+  const subtotal = unit*currentSale.qtd - currentSale.desconto;
+  document.getElementById('saleTotal').textContent = fmt(Math.max(0,subtotal));
+  document.getElementById('saleQtyLabel').textContent = `${currentSale.qtd} fatia(s)`;
+  document.getElementById('confirmSale').disabled = !(currentSale.sabor && currentSale.pagamento);
+}
+
+document.getElementById('confirmSale').addEventListener('click', async ()=>{
+  const r = DB.receitas.find(x=>x.id===currentSale.sabor);
+  if(!r) return;
+  const precoVenda = r.preco_venda||r.precoVenda;
+  const subtotal = Math.max(0, precoVenda*currentSale.qtd - currentSale.desconto);
+  const now = new Date();
+  const hora = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const venda = {
+    id: uid(), dia: DB.diaAtual, sabor: r.id, sabor_nome: r.nome,
+    qtd: currentSale.qtd, valor_unit: precoVenda, desconto: currentSale.desconto,
+    pagamento: currentSale.pagamento, subtotal, hora
+  };
+  setSyncState("syncing");
+  try {
+    await sbInsert("vendas", venda);
+    // Baixa de estoque nos ingredientes
+    const batches = currentSale.qtd/r.rendimento;
+    for(const ri of (r.ingredientes||[])){
+      const ing = DB.ingredientes.find(i=>i.id===ri.ing);
+      if(!ing) continue;
+      const novoEstoque = Math.max(0, ing.estoque - ri.qtd*batches);
+      await sbUpdate("ingredientes", `id=eq.${ing.id}`, {estoque: novoEstoque, updated_at: new Date().toISOString()});
+      ing.estoque = novoEstoque;
+    }
+    // Atualiza cache local
+    DB.vendas.push({...venda, saborNome:venda.sabor_nome, valorUnit:venda.valor_unit});
+    setSyncState("ok");
+    toast(`Venda registrada: ${currentSale.qtd}x ${r.nome}`);
+    currentSale={sabor:null,qtd:1,pagamento:null,desconto:0};
+    document.getElementById('qtyNum').textContent=1;
+    document.getElementById('discountInput').value=0;
+    renderAll();
+  } catch(e){
+    setSyncState("err");
+    toast("Erro ao salvar venda: "+e.message, true);
+  }
+});
+
+function renderSaleLog(){
+  const vendasHoje = DB.vendas.filter(v=>v.dia===DB.diaAtual).slice().reverse();
+  document.getElementById('todayCount').textContent = `${vendasHoje.length} venda(s)`;
+  const log = document.getElementById('saleLog');
+  if(!vendasHoje.length){ log.innerHTML=`<div class="empty">Nenhuma venda registrada hoje ainda.</div>`; return; }
+  log.innerHTML = vendasHoje.map(v=>`
+    <div class="sale-item">
+      <span>${v.hora} · ${v.qtd}x ${v.saborNome||v.sabor_nome} <span class="muted">(${v.pagamento})</span></span>
+      <span style="display:flex;align-items:center;gap:8px;">${fmt(v.subtotal)} <button data-id="${v.id}">✕</button></span>
+    </div>`).join('');
+  log.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click', async ()=>{
+    setSyncState("syncing");
+    try{ await sbDelete("vendas",`id=eq.${b.dataset.id}`); DB.vendas=DB.vendas.filter(v=>v.id!==b.dataset.id); setSyncState("ok"); renderAll(); }
+    catch(e){ setSyncState("err"); toast("Erro ao remover",true); }
+  }));
+}
+
+/* ============================================================
+   ESTOQUE
+   ============================================================ */
+function renderEstoque(){
+  const list = document.getElementById('ingList');
+  list.innerHTML = DB.ingredientes.map(ing=>{
+    const pct = ing.minimo>0?Math.min(100,(ing.estoque/(ing.minimo*3))*100):100;
+    const low = ing.estoque<=ing.minimo;
+    return `<div class="ing-item">
+      <div>
+        <div class="ing-name">${ing.nome}${low?'<span class="tag-low">Baixo</span>':''}</div>
+        <div class="ing-meta">${(+ing.estoque).toLocaleString('pt-BR')} ${ing.unidade} · custo ${fmt(ing.custo)}/${ing.unidade}</div>
+        <div class="bar-bg"><div class="bar-fill ${low?'low':''}" style="width:${pct}%;"></div></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" data-edit="${ing.id}">Editar</button>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>openIngForm(b.dataset.edit)));
+}
+
+let editingIngId=null;
+document.getElementById('addIngBtn').addEventListener('click',()=>openIngForm(null));
+document.getElementById('cancelIngBtn').addEventListener('click',()=>{ document.getElementById('ingFormCard').style.display='none'; });
+function openIngForm(id){
+  editingIngId=id;
+  const card=document.getElementById('ingFormCard');
+  card.style.display='block';
+  if(id){
+    const ing=DB.ingredientes.find(i=>i.id===id);
+    document.getElementById('ingFormTitle').textContent="Editar ingrediente";
+    document.getElementById('ingNome').value=ing.nome;
+    document.getElementById('ingUnidade').value=ing.unidade;
+    document.getElementById('ingCusto').value=ing.custo;
+    document.getElementById('ingEstoque').value=ing.estoque;
+    document.getElementById('ingMinimo').value=ing.minimo;
+    document.getElementById('ingFornecedor').value=ing.fornecedor||'';
+  } else {
+    document.getElementById('ingFormTitle').textContent="Novo ingrediente";
+    ['ingNome','ingCusto','ingEstoque','ingMinimo','ingFornecedor'].forEach(i=>document.getElementById(i).value='');
+  }
+  card.scrollIntoView({behavior:'smooth'});
+}
+document.getElementById('saveIngBtn').addEventListener('click', async ()=>{
+  const nome=document.getElementById('ingNome').value.trim();
+  if(!nome){ toast("Dê um nome ao ingrediente"); return; }
+  const data={
+    nome, unidade:document.getElementById('ingUnidade').value,
+    custo:Number(document.getElementById('ingCusto').value)||0,
+    estoque:Number(document.getElementById('ingEstoque').value)||0,
+    minimo:Number(document.getElementById('ingMinimo').value)||0,
+    fornecedor:document.getElementById('ingFornecedor').value.trim(),
+    updated_at: new Date().toISOString()
+  };
+  setSyncState("syncing");
+  try{
+    if(editingIngId){
+      await sbUpdate("ingredientes",`id=eq.${editingIngId}`,data);
+      Object.assign(DB.ingredientes.find(i=>i.id===editingIngId),data);
+    } else {
+      data.id = uid();
+      const rows = await sbInsert("ingredientes",data);
+      DB.ingredientes.push(rows[0]||data);
+    }
+    setSyncState("ok");
+    document.getElementById('ingFormCard').style.display='none';
+    toast("Ingrediente salvo");
+    renderAll();
+  } catch(e){ setSyncState("err"); toast("Erro: "+e.message,true); }
+});
+
+/* ============================================================
+   RECEITAS / PREÇO
+   ============================================================ */
+let activeRecipe=null;
+function renderRecipeTabs(){
+  if(!activeRecipe && DB.receitas.length) activeRecipe=DB.receitas[0].id;
+  document.getElementById('recipeTabs').innerHTML = DB.receitas.map(r=>
+    `<button data-id="${r.id}" class="${activeRecipe===r.id?'active':''}">${r.nome}</button>`).join('');
+  document.querySelectorAll('#recipeTabs button').forEach(b=>b.addEventListener('click',()=>{
+    activeRecipe=b.dataset.id; renderRecipeTabs(); renderRecipeBody();
+  }));
+  renderRecipeBody();
+}
+function renderRecipeBody(){
+  const r=DB.receitas.find(x=>x.id===activeRecipe);
+  if(!r){ document.getElementById('recipeBody').innerHTML='<div class="empty">Selecione uma receita.</div>'; return; }
+  const cost=recipeCost(r);
+  const precoVenda = r.preco_venda||r.precoVenda||0;
+  document.getElementById('recipeBody').innerHTML=`
+    <table class="mini-table">
+      <thead><tr><th>Ingrediente</th><th>Qtd.</th><th>Custo</th></tr></thead>
+      <tbody>${(r.ingredientes||[]).map(ri=>{
+        const ing=DB.ingredientes.find(i=>i.id===ri.ing);
+        return `<tr>
+          <td>${ing?ing.nome:'—'}</td>
+          <td><input type="number" step="1" value="${ri.qtd}" data-ing="${ri.ing}" style="width:70px;padding:4px 6px;" class="qtyEdit"> ${ing?ing.unidade:''}</td>
+          <td>${ing?fmt(ing.custo*ri.qtd):'—'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div class="row2" style="margin-top:10px;">
+      <div><label>Rendimento (fatias)</label><input id="rendInput" type="number" value="${r.rendimento}"></div>
+      <div><label>Preço de venda atual (R$)</label><input id="precoInput" type="number" step="0.5" value="${precoVenda}"></div>
+    </div>
+    <div class="price-box">
+      <div class="price-line"><span>Custo total dos ingredientes</span><span>${fmt(cost.rawTotal)}</span></div>
+      <div class="price-line"><span>+ custos fixos (${DB.config.custosFixosPct}%)</span><span>${fmt(cost.totalWithFixed-cost.rawTotal)}</span></div>
+      <div class="price-line total"><span>Custo por fatia</span><span>${fmt(cost.perSlice)}</span></div>
+      <div class="price-line"><span>Preço sugerido (margem ${DB.config.margemLucroPct}%)</span><span class="suggested">${fmt(cost.suggested)}</span></div>
+      <div class="price-line"><span>Lucro estimado / fatia</span><span>${fmt(precoVenda-cost.perSlice)}</span></div>
+    </div>
+    <button class="btn btn-primary btn-sm" id="applySuggested" style="margin-top:10px;">Usar preço sugerido</button>
+  `;
+  document.querySelectorAll('.qtyEdit').forEach(inp=>inp.addEventListener('change', async e=>{
+    const ri=(r.ingredientes||[]).find(x=>x.ing===e.target.dataset.ing);
+    if(ri){ ri.qtd=Number(e.target.value)||0; await saveReceita(r); renderRecipeBody(); renderFlavorGrid(); }
+  }));
+  document.getElementById('rendInput').addEventListener('change', async e=>{ r.rendimento=Number(e.target.value)||1; await saveReceita(r); renderRecipeBody(); renderFlavorGrid(); });
+  document.getElementById('precoInput').addEventListener('change', async e=>{ r.preco_venda=Number(e.target.value)||0; r.precoVenda=r.preco_venda; await saveReceita(r); renderRecipeBody(); renderFlavorGrid(); });
+  document.getElementById('applySuggested').addEventListener('click', async ()=>{
+    r.preco_venda=Math.round(cost.suggested*2)/2; r.precoVenda=r.preco_venda;
+    await saveReceita(r); renderRecipeBody(); renderFlavorGrid(); toast("Preço atualizado");
+  });
+}
+async function saveReceita(r){
+  setSyncState("syncing");
+  try{
+    await sbUpdate("receitas",`id=eq.${r.id}`,{
+      nome:r.nome, rendimento:r.rendimento,
+      preco_venda:r.preco_venda||r.precoVenda||0,
+      ingredientes:JSON.stringify(r.ingredientes)
+    });
+    setSyncState("ok");
+  } catch(e){ setSyncState("err"); toast("Erro ao salvar receita",true); }
+}
+
+/* ============================================================
+   AJUSTES
+   ============================================================ */
+function renderAjustes(){
+  document.getElementById('investTotal').value=DB.investimento.total;
+  document.getElementById('custosFixos').value=DB.config.custosFixosPct;
+  document.getElementById('margemLucro').value=DB.config.margemLucroPct;
+  const list=document.getElementById('investList');
+  list.innerHTML=DB.investimento.itens.map(it=>`
+    <div class="sale-item"><span>${it.item}</span><span style="display:flex;gap:8px;align-items:center;">${fmt(it.valor)} <button data-i="${it.id}">✕</button></span></div>
+  `).join('')||`<div class="empty">Nenhuma alocação cadastrada.</div>`;
+  list.querySelectorAll('button[data-i]').forEach(b=>b.addEventListener('click', async ()=>{
+    setSyncState("syncing");
+    try{ await sbDelete("investimento_itens",`id=eq.${b.dataset.i}`); DB.investimento.itens=DB.investimento.itens.filter(i=>i.id!==b.dataset.i); setSyncState("ok"); renderAjustes(); }
+    catch(e){ setSyncState("err"); toast("Erro",true); }
+  }));
+  const alocado=DB.investimento.itens.reduce((s,i)=>s+Number(i.valor),0);
+  const restante=DB.investimento.total-alocado;
+  document.getElementById('investBalance').textContent=
+    `Alocado: ${fmt(alocado)} de ${fmt(DB.investimento.total)} · ${restante>=0?'Restante: '+fmt(restante):'Excedeu em '+fmt(-restante)}`;
+}
+document.getElementById('investTotal').addEventListener('change', async e=>{
+  DB.investimento.total=Number(e.target.value)||0;
+  setSyncState("syncing"); await setConfig("invest_total",DB.investimento.total); setSyncState("ok"); renderAjustes();
+});
+document.getElementById('custosFixos').addEventListener('change', async e=>{
+  DB.config.custosFixosPct=Number(e.target.value)||0;
+  setSyncState("syncing"); await setConfig("custos_fixos",DB.config.custosFixosPct); setSyncState("ok"); renderRecipeBody();
+});
+document.getElementById('margemLucro').addEventListener('change', async e=>{
+  DB.config.margemLucroPct=Number(e.target.value)||0;
+  setSyncState("syncing"); await setConfig("margem_lucro",DB.config.margemLucroPct); setSyncState("ok"); renderRecipeBody();
+});
+document.getElementById('addInvBtn').addEventListener('click', async ()=>{
+  const item=document.getElementById('invItem').value.trim();
+  const valor=Number(document.getElementById('invValor').value)||0;
+  if(!item||!valor){ toast("Preencha item e valor"); return; }
+  setSyncState("syncing");
+  try{
+    const rows=await sbInsert("investimento_itens",{id:uid(),item,valor});
+    DB.investimento.itens.push(rows[0]||{id:uid(),item,valor});
+    document.getElementById('invItem').value=''; document.getElementById('invValor').value='';
+    setSyncState("ok"); renderAjustes();
+  } catch(e){ setSyncState("err"); toast("Erro",true); }
+});
+
+/* ============================================================
+   PAINEL
+   ============================================================ */
+let charts={};
+function destroyChart(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } }
+
+function renderPainel(){
+  const fat=DB.vendas.reduce((s,v)=>s+Number(v.subtotal),0);
+  const fatiasTot=DB.vendas.reduce((s,v)=>s+v.qtd,0);
+  let custoVendido=0;
+  DB.receitas.forEach(r=>{ custoVendido+=slicesSoldFor(r.id)*recipeCost(r).perSlice; });
+  const lucro=fat-custoVendido;
+  const roi=DB.investimento.total>0?(lucro/DB.investimento.total)*100:0;
+  document.getElementById('kpiFat').textContent=fmt(fat);
+  document.getElementById('kpiLucro').innerHTML=`<span class="${lucro>=0?'pos':'neg'}">${fmt(lucro)}</span>`;
+  document.getElementById('kpiFatias').textContent=fatiasTot;
+  document.getElementById('kpiRoi').innerHTML=`<span class="${roi>=0?'pos':'neg'}">${roi.toFixed(0)}%</span>`;
+
+  const colors=['#F2544C','#E3A23D','#3E8E5A','#7A5B4C'];
+  destroyChart('sabor');
+  charts.sabor=new Chart(document.getElementById('chartSabor'),{
+    type:'bar',
+    data:{labels:DB.receitas.map(r=>r.nome),datasets:[{label:'Fatias vendidas',data:DB.receitas.map(r=>slicesSoldFor(r.id)),backgroundColor:colors,borderRadius:8}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}
+  });
+  destroyChart('dias');
+  charts.dias=new Chart(document.getElementById('chartDias'),{
+    type:'line',
+    data:{labels:DB.dias,datasets:[{label:'Faturamento',data:DB.dias.map((d,i)=>DB.vendas.filter(v=>v.dia===i).reduce((s,v)=>s+Number(v.subtotal),0)),borderColor:'#F2544C',backgroundColor:'rgba(242,84,76,.15)',fill:true,tension:.35,pointRadius:5}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+  });
+  destroyChart('margem');
+  charts.margem=new Chart(document.getElementById('chartMargem'),{
+    type:'bar',
+    data:{labels:DB.receitas.map(r=>r.nome),datasets:[{label:'Margem / fatia (R$)',data:DB.receitas.map(r=>{const c=recipeCost(r);return +((r.preco_venda||r.precoVenda||0)-c.perSlice).toFixed(2);}),backgroundColor:'#E3A23D',borderRadius:8}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}}}
+  });
+  const estoqueAtual=DB.ingredientes.reduce((s,i)=>s+Number(i.estoque),0);
+  const estoqueConsumido=DB.vendas.reduce((s,v)=>{
+    const r=DB.receitas.find(x=>x.id===v.sabor);
+    if(!r) return s;
+    return s+(r.ingredientes||[]).reduce((acc,ri)=>acc+ri.qtd*(v.qtd/r.rendimento),0);
+  },0);
+  destroyChart('estoque');
+  charts.estoque=new Chart(document.getElementById('chartEstoque'),{
+    type:'doughnut',
+    data:{labels:['Restante','Consumido'],datasets:[{data:[estoqueAtual,Math.max(0,estoqueConsumido)],backgroundColor:['#3E8E5A','#FAD4CE']}]},
+    options:{plugins:{legend:{position:'bottom'}}}
+  });
+}
+
+/* Export CSV */
+document.getElementById('exportCsv').addEventListener('click',()=>{
+  let csv="dia,hora,sabor,quantidade,valor_unitario,desconto,forma_pagamento,subtotal\n";
+  DB.vendas.forEach(v=>{ csv+=`${DB.dias[v.dia]},${v.hora},${v.sabor_nome||v.saborNome},${v.qtd},${v.valor_unit||v.valorUnit},${v.desconto},${v.pagamento},${v.subtotal}\n`; });
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vicio_vendas.csv'; a.click();
+});
+
+/* ============================================================
+   RENDER ALL + BOOT
+   ============================================================ */
+function renderAll(){
+  renderHeader();
+  renderFlavorGrid();
+  renderPayGrid();
+  updateSaleTotal();
+  renderSaleLog();
+  renderEstoque();
+  renderRecipeTabs();
+}
+
+async function boot(){
+  try{
+    await loadAll();
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    renderAll();
+  } catch(e){
+    document.getElementById('loadingOverlay').innerHTML=`
+      <div style="font-size:40px;">⚠️</div>
+      <p style="text-align:center;padding:0 24px;">Erro ao conectar ao banco de dados.<br><small>${e.message}</small></p>
+      <p style="font-size:13px;opacity:.8;">Verifique a URL e a chave Supabase no código.</p>
+    `;
+  }
+}
+boot();
+</script>
+</body>
+</html>
