@@ -137,12 +137,12 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
 </style>
 </head>
 <body>
- 
+
 <div id="loadingOverlay">
   <div class="spin"></div>
   <p>Conectando ao Viciô…</p>
 </div>
- 
+
 <header class="top">
   <div class="brandrow">
     <div class="brandname">
@@ -153,7 +153,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
   </div>
   <div class="stat-strip" id="statStrip"></div>
 </header>
- 
+
 <main>
   <!-- VENDER -->
   <div class="tabview" id="tab-vender">
@@ -185,7 +185,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
       <div class="sale-log" id="saleLog"></div>
     </div>
   </div>
- 
+
   <!-- ESTOQUE -->
   <div class="tabview" id="tab-estoque">
     <div class="card">
@@ -222,7 +222,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
       </div>
     </div>
   </div>
- 
+
   <!-- RECEITAS -->
   <div class="tabview" id="tab-receitas">
     <div class="card">
@@ -231,7 +231,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
       <div id="recipeBody"></div>
     </div>
   </div>
- 
+
   <!-- PAINEL -->
   <div class="tabview" id="tab-painel">
     <div class="kpi-grid">
@@ -245,7 +245,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
     <div class="card"><h2>Margem de lucro por sabor</h2><div class="chart-wrap"><canvas id="chartMargem"></canvas></div></div>
     <div class="card"><h2>Estoque: consumido vs. restante</h2><div class="chart-wrap"><canvas id="chartEstoque"></canvas></div></div>
   </div>
- 
+
   <!-- AJUSTES -->
   <div class="tabview" id="tab-ajustes">
     <div class="card">
@@ -278,7 +278,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
     </div>
   </div>
 </main>
- 
+
 <nav class="bottom">
   <button data-tab="vender" class="active"><span class="ic">🧾</span>Vender</button>
   <button data-tab="estoque"><span class="ic">🥣</span>Estoque</button>
@@ -286,9 +286,9 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
   <button data-tab="painel"><span class="ic">📊</span>Painel</button>
   <button data-tab="ajustes"><span class="ic">⚙️</span>Ajustes</button>
 </nav>
- 
+
 <div class="toast" id="toast"></div>
- 
+
 <script>
 /* ============================================================
    CONFIGURAÇÃO SUPABASE
@@ -297,7 +297,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
    ============================================================ */
 const SUPA_URL  = "COLE_SUA_PROJECT_URL_AQUI";       // ex: https://mcjowmfbxxwrjfrlaeyt.supabase.co
 const SUPA_ANON = "COLE_SUA_ANON_KEY_AQUI";          // começa com eyJ...
- 
+
 /* ============================================================
    CAMADA DE ACESSO AO SUPABASE (REST direto, sem SDK)
    ============================================================ */
@@ -307,7 +307,7 @@ const headers = {
   "Authorization": "Bearer " + SUPA_ANON,
   "Prefer": "return=representation"
 };
- 
+
 async function sbGet(table, params=""){
   const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {headers});
   if(!r.ok) throw new Error(await r.text());
@@ -335,7 +335,7 @@ async function sbUpsert(table, body, onConflict="id"){
 }
 async function getConfig(key){ const rows = await sbGet("config",`key=eq.${key}&select=value`); return rows[0]?.value; }
 async function setConfig(key, value){ await sbUpsert("config",{key, value},"key"); }
- 
+
 /* ============================================================
    ESTADO LOCAL (cache em memória, não em localStorage)
    ============================================================ */
@@ -348,7 +348,7 @@ let DB = {
   receitas: [],
   vendas: []
 };
- 
+
 /* ============================================================
    SINCRONIZAÇÃO: CARREGAR TUDO DO SUPABASE
    ============================================================ */
@@ -376,18 +376,18 @@ async function loadAll(){
   DB.investimento.itens = investItens;
   setSyncState("ok");
 }
- 
+
 /* ============================================================
    HELPERS
    ============================================================ */
 const fmt = n => "R$ " + (Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now();
- 
+
 function setSyncState(s){
   const dot = document.getElementById("syncDot");
   dot.className = "sync-dot " + s;
 }
- 
+
 function toast(msg, isErr=false){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -396,7 +396,7 @@ function toast(msg, isErr=false){
   clearTimeout(toast._h);
   toast._h = setTimeout(()=>t.classList.remove('show'), 2000);
 }
- 
+
 function recipeCost(r){
   let total=0;
   (r.ingredientes||[]).forEach(ri=>{
@@ -408,7 +408,7 @@ function recipeCost(r){
   const suggested = perSlice*(1+DB.config.margemLucroPct/100);
   return {rawTotal:total, totalWithFixed:withFixed, perSlice, suggested};
 }
- 
+
 function stockForFlavor(recipeId){
   const r = DB.receitas.find(x=>x.id===recipeId);
   if(!r) return 0;
@@ -419,12 +419,12 @@ function stockForFlavor(recipeId){
   });
   return maxBatches===Infinity?0:Math.floor(maxBatches*r.rendimento);
 }
- 
+
 function slicesSoldFor(recipeId, diaIndex=null){
   return DB.vendas.filter(v=>v.sabor===recipeId&&(diaIndex===null||v.dia===diaIndex))
     .reduce((s,v)=>s+v.qtd,0);
 }
- 
+
 /* ============================================================
    TABS
    ============================================================ */
@@ -438,7 +438,7 @@ document.querySelectorAll('nav.bottom button').forEach(btn=>{
     if(btn.dataset.tab==='ajustes') renderAjustes();
   });
 });
- 
+
 /* ============================================================
    HEADER
    ============================================================ */
@@ -463,12 +463,12 @@ function renderHeader(){
     <div class="stat-pill"><div class="lbl">Total evento</div><div class="val">${fmt(fatTotal)}</div></div>
     <div class="stat-pill"><div class="lbl">Fatias total</div><div class="val">${fatiasTotal}</div></div>`;
 }
- 
+
 /* ============================================================
    VENDER (PDV)
    ============================================================ */
 let currentSale = {sabor:null, qtd:1, pagamento:null, desconto:0};
- 
+
 function renderFlavorGrid(){
   const grid = document.getElementById('flavorGrid');
   grid.innerHTML = DB.receitas.map(r=>{
@@ -484,7 +484,7 @@ function renderFlavorGrid(){
     currentSale.sabor=c.dataset.id; renderFlavorGrid(); updateSaleTotal();
   }));
 }
- 
+
 function renderPayGrid(){
   const opts=[{id:'dinheiro',label:'💵 Dinheiro'},{id:'cartao',label:'💳 Cartão'},{id:'pix',label:'📱 Pix'}];
   document.getElementById('payGrid').innerHTML = opts.map(o=>
@@ -493,11 +493,11 @@ function renderPayGrid(){
     currentSale.pagamento=b.dataset.id; renderPayGrid(); updateSaleTotal();
   }));
 }
- 
+
 document.getElementById('qtyMinus').addEventListener('click',()=>{ currentSale.qtd=Math.max(1,currentSale.qtd-1); document.getElementById('qtyNum').textContent=currentSale.qtd; updateSaleTotal(); });
 document.getElementById('qtyPlus').addEventListener('click',()=>{ currentSale.qtd+=1; document.getElementById('qtyNum').textContent=currentSale.qtd; updateSaleTotal(); });
 document.getElementById('discountInput').addEventListener('input',e=>{ currentSale.desconto=Number(e.target.value)||0; updateSaleTotal(); });
- 
+
 function updateSaleTotal(){
   const r = DB.receitas.find(x=>x.id===currentSale.sabor);
   const unit = r?(r.preco_venda||r.precoVenda):0;
@@ -506,7 +506,7 @@ function updateSaleTotal(){
   document.getElementById('saleQtyLabel').textContent = `${currentSale.qtd} fatia(s)`;
   document.getElementById('confirmSale').disabled = !(currentSale.sabor && currentSale.pagamento);
 }
- 
+
 document.getElementById('confirmSale').addEventListener('click', async ()=>{
   const r = DB.receitas.find(x=>x.id===currentSale.sabor);
   if(!r) return;
@@ -544,7 +544,7 @@ document.getElementById('confirmSale').addEventListener('click', async ()=>{
     toast("Erro ao salvar venda: "+e.message, true);
   }
 });
- 
+
 function renderSaleLog(){
   const vendasHoje = DB.vendas.filter(v=>v.dia===DB.diaAtual).slice().reverse();
   document.getElementById('todayCount').textContent = `${vendasHoje.length} venda(s)`;
@@ -561,13 +561,13 @@ function renderSaleLog(){
     catch(e){ setSyncState("err"); toast("Erro ao remover",true); }
   }));
 }
- 
+
 /* ============================================================
    ESTOQUE — multi-select + bulk delete
    ============================================================ */
 let ingSelectMode = false;
 let ingSelected = new Set();
- 
+
 function updateBulkBar(){
   const bar = document.getElementById('bulkBar');
   const n = ingSelected.size;
@@ -578,18 +578,18 @@ function updateBulkBar(){
     bar.classList.remove('show');
   }
 }
- 
+
 function renderEstoque(){
   const list = document.getElementById('ingList');
   const toggleBtn = document.getElementById('toggleSelectBtn');
   toggleBtn.textContent = ingSelectMode ? 'Cancelar' : 'Selecionar';
   toggleBtn.className = ingSelectMode ? 'btn btn-outline btn-sm' : 'btn btn-ghost btn-sm';
- 
+
   if(!DB.ingredientes.length){
     list.innerHTML = `<div class="empty">Nenhum ingrediente cadastrado.</div>`;
     return;
   }
- 
+
   list.innerHTML = DB.ingredientes.map(ing=>{
     const pct = ing.minimo>0 ? Math.min(100,(ing.estoque/(ing.minimo*3))*100) : 100;
     const low = ing.estoque <= ing.minimo;
@@ -604,7 +604,7 @@ function renderEstoque(){
       ${ingSelectMode ? '' : `<button class="btn btn-ghost btn-sm" data-edit="${ing.id}" style="flex-shrink:0;">Editar</button>`}
     </div>`;
   }).join('');
- 
+
   // Modo seleção: toque no item alterna seleção
   if(ingSelectMode){
     list.querySelectorAll('.ing-item').forEach(el=>{
@@ -621,7 +621,7 @@ function renderEstoque(){
   }
   updateBulkBar();
 }
- 
+
 // Botão "Selecionar / Cancelar"
 document.getElementById('toggleSelectBtn').addEventListener('click', ()=>{
   ingSelectMode = !ingSelectMode;
@@ -629,7 +629,7 @@ document.getElementById('toggleSelectBtn').addEventListener('click', ()=>{
   renderEstoque();
   updateBulkBar();
 });
- 
+
 // Barra flutuante: remover selecionados
 document.getElementById('bulkDeleteBtn').addEventListener('click', async ()=>{
   if(!ingSelected.size) return;
@@ -653,7 +653,7 @@ document.getElementById('bulkDeleteBtn').addEventListener('click', async ()=>{
     toast("Erro ao remover: "+e.message, true);
   }
 });
- 
+
 // Cancelar seleção
 document.getElementById('bulkCancelBtn').addEventListener('click', ()=>{
   ingSelectMode = false;
@@ -661,7 +661,7 @@ document.getElementById('bulkCancelBtn').addEventListener('click', ()=>{
   renderEstoque();
   updateBulkBar();
 });
- 
+
 let editingIngId=null;
 document.getElementById('addIngBtn').addEventListener('click',()=>openIngForm(null));
 document.getElementById('cancelIngBtn').addEventListener('click',()=>{ document.getElementById('ingFormCard').style.display='none'; });
@@ -711,7 +711,7 @@ document.getElementById('saveIngBtn').addEventListener('click', async ()=>{
     renderAll();
   } catch(e){ setSyncState("err"); toast("Erro: "+e.message,true); }
 });
- 
+
 /* ============================================================
    RECEITAS / PREÇO
    ============================================================ */
@@ -777,7 +777,7 @@ async function saveReceita(r){
     setSyncState("ok");
   } catch(e){ setSyncState("err"); toast("Erro ao salvar receita",true); }
 }
- 
+
 /* ============================================================
    AJUSTES
    ============================================================ */
@@ -823,13 +823,13 @@ document.getElementById('addInvBtn').addEventListener('click', async ()=>{
     setSyncState("ok"); renderAjustes();
   } catch(e){ setSyncState("err"); toast("Erro",true); }
 });
- 
+
 /* ============================================================
    PAINEL
    ============================================================ */
 let charts={};
 function destroyChart(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } }
- 
+
 function renderPainel(){
   const fat=DB.vendas.reduce((s,v)=>s+Number(v.subtotal),0);
   const fatiasTot=DB.vendas.reduce((s,v)=>s+v.qtd,0);
@@ -841,7 +841,7 @@ function renderPainel(){
   document.getElementById('kpiLucro').innerHTML=`<span class="${lucro>=0?'pos':'neg'}">${fmt(lucro)}</span>`;
   document.getElementById('kpiFatias').textContent=fatiasTot;
   document.getElementById('kpiRoi').innerHTML=`<span class="${roi>=0?'pos':'neg'}">${roi.toFixed(0)}%</span>`;
- 
+
   const colors=['#F2544C','#E3A23D','#3E8E5A','#7A5B4C'];
   destroyChart('sabor');
   charts.sabor=new Chart(document.getElementById('chartSabor'),{
@@ -874,14 +874,14 @@ function renderPainel(){
     options:{plugins:{legend:{position:'bottom'}}}
   });
 }
- 
+
 /* Export CSV */
 document.getElementById('exportCsv').addEventListener('click',()=>{
   let csv="dia,hora,sabor,quantidade,valor_unitario,desconto,forma_pagamento,subtotal\n";
   DB.vendas.forEach(v=>{ csv+=`${DB.dias[v.dia]},${v.hora},${v.sabor_nome||v.saborNome},${v.qtd},${v.valor_unit||v.valorUnit},${v.desconto},${v.pagamento},${v.subtotal}\n`; });
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vicio_vendas.csv'; a.click();
 });
- 
+
 /* ============================================================
    RENDER ALL + BOOT
    ============================================================ */
@@ -894,7 +894,7 @@ function renderAll(){
   renderEstoque();
   renderRecipeTabs();
 }
- 
+
 async function boot(){
   try{
     await loadAll();
