@@ -137,12 +137,12 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
 </style>
 </head>
 <body>
-
+ 
 <div id="loadingOverlay">
   <div class="spin"></div>
   <p>Conectando ao Viciô…</p>
 </div>
-
+ 
 <header class="top">
   <div class="brandrow">
     <div class="brandname">
@@ -153,7 +153,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
   </div>
   <div class="stat-strip" id="statStrip"></div>
 </header>
-
+ 
 <main>
   <!-- VENDER -->
   <div class="tabview" id="tab-vender">
@@ -185,7 +185,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
       <div class="sale-log" id="saleLog"></div>
     </div>
   </div>
-
+ 
   <!-- ESTOQUE -->
   <div class="tabview" id="tab-estoque">
     <div class="card">
@@ -216,22 +216,13 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
         <div><label>Estoque mínimo (alerta)</label><input id="ingMinimo" type="number" step="0.1" placeholder="0"></div>
       </div>
       <label>Fornecedor (opcional)</label><input id="ingFornecedor" placeholder="Ex: Mercado São José">
-      <!-- Embalagem com múltiplas unidades -->
-      <div style="margin-top:12px;padding:12px;background:var(--cream);border-radius:12px;border:1px dashed var(--gold);">
-        <label style="margin:0 0 4px;color:var(--gold);">📦 Produto vendido em embalagem? (opcional)</label>
-        <div class="row2">
-          <div><label>Un. por embalagem</label><input id="ingUnidPacote" type="number" step="1" min="1" placeholder="Ex: 10 (deixe vazio se não se aplica)"></div>
-          <div><label>Custo total da embalagem (R$)</label><input id="ingCustoPacote" type="number" step="0.01" placeholder="Ex: 15,00"></div>
-        </div>
-        <div class="small-note" id="ingCustoUnitCalc">O custo por unidade será calculado automaticamente.</div>
-      </div>
       <div style="display:flex;gap:8px;margin-top:14px;">
         <button class="btn btn-primary" id="saveIngBtn" style="flex:1;">Salvar</button>
         <button class="btn btn-ghost" id="cancelIngBtn">Cancelar</button>
       </div>
     </div>
   </div>
-
+ 
   <!-- RECEITAS -->
   <div class="tabview" id="tab-receitas">
     <div class="card">
@@ -240,7 +231,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
       <div id="recipeBody"></div>
     </div>
   </div>
-
+ 
   <!-- PAINEL -->
   <div class="tabview" id="tab-painel">
     <div class="kpi-grid">
@@ -253,26 +244,21 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
     <div class="card"><h2>Evolução ao longo dos dias</h2><div class="chart-wrap"><canvas id="chartDias"></canvas></div></div>
     <div class="card"><h2>Margem de lucro por sabor</h2><div class="chart-wrap"><canvas id="chartMargem"></canvas></div></div>
     <div class="card"><h2>Estoque: consumido vs. restante</h2><div class="chart-wrap"><canvas id="chartEstoque"></canvas></div></div>
-    <div class="card">
-      <h2>Custo por ingrediente / fornecedor</h2>
-      <p class="small-note" style="margin-bottom:10px;">Valor investido em cada item (quantidade × custo unitário), por fornecedor. Acumule eventos para comparar quem oferece melhor preço.</p>
-      <div class="chart-wrap" style="height:280px;"><canvas id="chartFornecedor"></canvas></div>
-      <div id="fornecedorLegend" style="margin-top:10px;display:flex;flex-wrap:wrap;"></div>
-    </div>
   </div>
-
+ 
   <!-- AJUSTES -->
   <div class="tabview" id="tab-ajustes">
     <div class="card">
       <h2>Investimento inicial</h2>
       <label>Valor total investido (R$)</label>
       <input id="investTotal" type="number" step="1">
-      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
-        Alocação por compra
-        <button class="btn btn-outline btn-sm" id="calcFromStockBtn">↻ Calcular pelo estoque</button>
-      </div>
-      <p class="small-note" style="margin-bottom:8px;">O botão acima calcula automaticamente o custo de cada ingrediente com base no estoque cadastrado (quantidade × custo unitário), agrupando por fornecedor.</p>
+      <div class="section-title">Alocação por compra</div>
       <div id="investList"></div>
+      <div class="row3" style="margin-top:6px;">
+        <input id="invItem" placeholder="Item">
+        <input id="invValor" type="number" step="0.5" placeholder="R$">
+        <button class="btn btn-primary btn-sm" id="addInvBtn">Add</button>
+      </div>
       <div class="small-note" id="investBalance"></div>
     </div>
     <div class="card">
@@ -292,7 +278,7 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
     </div>
   </div>
 </main>
-
+ 
 <nav class="bottom">
   <button data-tab="vender" class="active"><span class="ic">🧾</span>Vender</button>
   <button data-tab="estoque"><span class="ic">🥣</span>Estoque</button>
@@ -300,18 +286,17 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
   <button data-tab="painel"><span class="ic">📊</span>Painel</button>
   <button data-tab="ajustes"><span class="ic">⚙️</span>Ajustes</button>
 </nav>
-
+ 
 <div class="toast" id="toast"></div>
-
+ 
 <script>
 /* ============================================================
    CONFIGURAÇÃO SUPABASE
    Substitua as duas constantes abaixo com os valores do seu projeto
    Project Settings → API no dashboard do Supabase
    ============================================================ */
-const SUPA_URL  = "https://mcjowmfbxxwrjfrlaeyt.supabase.co";       // ex: https://mcjowmfbxxwrjfrlaeyt.supabase.co
-const SUPA_ANON = "sb_publishable_ipFHurMAawkVItILpwhROw_hE2T2Ebu";          // começa com eyJ...
-
+const SUPA_URL  = "https://mcjowmfbxxwrjfrlaeyt.supabase.co";      
+const SUPA_ANON = "sb_publishable_ipFHurMAawkVItILpwhROw_hE2T2Ebu";         
 /* ============================================================
    CAMADA DE ACESSO AO SUPABASE (REST direto, sem SDK)
    ============================================================ */
@@ -321,7 +306,7 @@ const headers = {
   "Authorization": "Bearer " + SUPA_ANON,
   "Prefer": "return=representation"
 };
-
+ 
 async function sbGet(table, params=""){
   const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {headers});
   if(!r.ok) throw new Error(await r.text());
@@ -349,7 +334,7 @@ async function sbUpsert(table, body, onConflict="id"){
 }
 async function getConfig(key){ const rows = await sbGet("config",`key=eq.${key}&select=value`); return rows[0]?.value; }
 async function setConfig(key, value){ await sbUpsert("config",{key, value},"key"); }
-
+ 
 /* ============================================================
    ESTADO LOCAL (cache em memória, não em localStorage)
    ============================================================ */
@@ -362,7 +347,7 @@ let DB = {
   receitas: [],
   vendas: []
 };
-
+ 
 /* ============================================================
    SINCRONIZAÇÃO: CARREGAR TUDO DO SUPABASE
    ============================================================ */
@@ -390,18 +375,18 @@ async function loadAll(){
   DB.investimento.itens = investItens;
   setSyncState("ok");
 }
-
+ 
 /* ============================================================
    HELPERS
    ============================================================ */
 const fmt = n => "R$ " + (Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now();
-
+ 
 function setSyncState(s){
   const dot = document.getElementById("syncDot");
   dot.className = "sync-dot " + s;
 }
-
+ 
 function toast(msg, isErr=false){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -410,7 +395,7 @@ function toast(msg, isErr=false){
   clearTimeout(toast._h);
   toast._h = setTimeout(()=>t.classList.remove('show'), 2000);
 }
-
+ 
 function recipeCost(r){
   let total=0;
   (r.ingredientes||[]).forEach(ri=>{
@@ -422,7 +407,7 @@ function recipeCost(r){
   const suggested = perSlice*(1+DB.config.margemLucroPct/100);
   return {rawTotal:total, totalWithFixed:withFixed, perSlice, suggested};
 }
-
+ 
 function stockForFlavor(recipeId){
   const r = DB.receitas.find(x=>x.id===recipeId);
   if(!r) return 0;
@@ -433,12 +418,12 @@ function stockForFlavor(recipeId){
   });
   return maxBatches===Infinity?0:Math.floor(maxBatches*r.rendimento);
 }
-
+ 
 function slicesSoldFor(recipeId, diaIndex=null){
   return DB.vendas.filter(v=>v.sabor===recipeId&&(diaIndex===null||v.dia===diaIndex))
     .reduce((s,v)=>s+v.qtd,0);
 }
-
+ 
 /* ============================================================
    TABS
    ============================================================ */
@@ -452,7 +437,7 @@ document.querySelectorAll('nav.bottom button').forEach(btn=>{
     if(btn.dataset.tab==='ajustes') renderAjustes();
   });
 });
-
+ 
 /* ============================================================
    HEADER
    ============================================================ */
@@ -477,12 +462,12 @@ function renderHeader(){
     <div class="stat-pill"><div class="lbl">Total evento</div><div class="val">${fmt(fatTotal)}</div></div>
     <div class="stat-pill"><div class="lbl">Fatias total</div><div class="val">${fatiasTotal}</div></div>`;
 }
-
+ 
 /* ============================================================
    VENDER (PDV)
    ============================================================ */
 let currentSale = {sabor:null, qtd:1, pagamento:null, desconto:0};
-
+ 
 function renderFlavorGrid(){
   const grid = document.getElementById('flavorGrid');
   grid.innerHTML = DB.receitas.map(r=>{
@@ -498,7 +483,7 @@ function renderFlavorGrid(){
     currentSale.sabor=c.dataset.id; renderFlavorGrid(); updateSaleTotal();
   }));
 }
-
+ 
 function renderPayGrid(){
   const opts=[{id:'dinheiro',label:'💵 Dinheiro'},{id:'cartao',label:'💳 Cartão'},{id:'pix',label:'📱 Pix'}];
   document.getElementById('payGrid').innerHTML = opts.map(o=>
@@ -507,11 +492,11 @@ function renderPayGrid(){
     currentSale.pagamento=b.dataset.id; renderPayGrid(); updateSaleTotal();
   }));
 }
-
+ 
 document.getElementById('qtyMinus').addEventListener('click',()=>{ currentSale.qtd=Math.max(1,currentSale.qtd-1); document.getElementById('qtyNum').textContent=currentSale.qtd; updateSaleTotal(); });
 document.getElementById('qtyPlus').addEventListener('click',()=>{ currentSale.qtd+=1; document.getElementById('qtyNum').textContent=currentSale.qtd; updateSaleTotal(); });
 document.getElementById('discountInput').addEventListener('input',e=>{ currentSale.desconto=Number(e.target.value)||0; updateSaleTotal(); });
-
+ 
 function updateSaleTotal(){
   const r = DB.receitas.find(x=>x.id===currentSale.sabor);
   const unit = r?(r.preco_venda||r.precoVenda):0;
@@ -520,7 +505,7 @@ function updateSaleTotal(){
   document.getElementById('saleQtyLabel').textContent = `${currentSale.qtd} fatia(s)`;
   document.getElementById('confirmSale').disabled = !(currentSale.sabor && currentSale.pagamento);
 }
-
+ 
 document.getElementById('confirmSale').addEventListener('click', async ()=>{
   const r = DB.receitas.find(x=>x.id===currentSale.sabor);
   if(!r) return;
@@ -558,7 +543,7 @@ document.getElementById('confirmSale').addEventListener('click', async ()=>{
     toast("Erro ao salvar venda: "+e.message, true);
   }
 });
-
+ 
 function renderSaleLog(){
   const vendasHoje = DB.vendas.filter(v=>v.dia===DB.diaAtual).slice().reverse();
   document.getElementById('todayCount').textContent = `${vendasHoje.length} venda(s)`;
@@ -575,13 +560,13 @@ function renderSaleLog(){
     catch(e){ setSyncState("err"); toast("Erro ao remover",true); }
   }));
 }
-
+ 
 /* ============================================================
    ESTOQUE — multi-select + bulk delete
    ============================================================ */
 let ingSelectMode = false;
 let ingSelected = new Set();
-
+ 
 function updateBulkBar(){
   const bar = document.getElementById('bulkBar');
   const n = ingSelected.size;
@@ -592,40 +577,33 @@ function updateBulkBar(){
     bar.classList.remove('show');
   }
 }
-
+ 
 function renderEstoque(){
   const list = document.getElementById('ingList');
   const toggleBtn = document.getElementById('toggleSelectBtn');
   toggleBtn.textContent = ingSelectMode ? 'Cancelar' : 'Selecionar';
   toggleBtn.className = ingSelectMode ? 'btn btn-outline btn-sm' : 'btn btn-ghost btn-sm';
-
+ 
   if(!DB.ingredientes.length){
     list.innerHTML = `<div class="empty">Nenhum ingrediente cadastrado.</div>`;
     return;
   }
-
+ 
   list.innerHTML = DB.ingredientes.map(ing=>{
     const pct = ing.minimo>0 ? Math.min(100,(ing.estoque/(ing.minimo*3))*100) : 100;
     const low = ing.estoque <= ing.minimo;
     const sel = ingSelected.has(ing.id);
-    // Info de pacote
-    let pacoteInfo = '';
-    if(ing.unid_pacote && ing.unid_pacote > 0){
-      const nPacotes = ing.estoque / ing.unid_pacote;
-      pacoteInfo = ` · <span style="color:var(--gold);font-weight:600;">📦 ${nPacotes.toLocaleString('pt-BR',{maximumFractionDigits:1})} pacote(s) × ${ing.unid_pacote} ${ing.unidade}</span>`;
-    }
-    const fornInfo = ing.fornecedor ? ` · ${ing.fornecedor}` : '';
     return `<div class="ing-item ${ingSelectMode?'selecting':''} ${sel?'selected-item':''}" data-id="${ing.id}">
       ${ingSelectMode ? `<div class="ing-checkbox ${sel?'checked':''}">${sel?'✓':''}</div>` : ''}
       <div style="flex:1;min-width:0;">
         <div class="ing-name">${ing.nome}${low?'<span class="tag-low">Baixo</span>':''}</div>
-        <div class="ing-meta">${(+ing.estoque).toLocaleString('pt-BR')} ${ing.unidade}${pacoteInfo} · custo ${fmt(ing.custo)}/${ing.unidade}${fornInfo}</div>
+        <div class="ing-meta">${(+ing.estoque).toLocaleString('pt-BR')} ${ing.unidade} · custo ${fmt(ing.custo)}/${ing.unidade}</div>
         <div class="bar-bg"><div class="bar-fill ${low?'low':''}" style="width:${pct}%;"></div></div>
       </div>
       ${ingSelectMode ? '' : `<button class="btn btn-ghost btn-sm" data-edit="${ing.id}" style="flex-shrink:0;">Editar</button>`}
     </div>`;
   }).join('');
-
+ 
   // Modo seleção: toque no item alterna seleção
   if(ingSelectMode){
     list.querySelectorAll('.ing-item').forEach(el=>{
@@ -642,7 +620,7 @@ function renderEstoque(){
   }
   updateBulkBar();
 }
-
+ 
 // Botão "Selecionar / Cancelar"
 document.getElementById('toggleSelectBtn').addEventListener('click', ()=>{
   ingSelectMode = !ingSelectMode;
@@ -650,7 +628,7 @@ document.getElementById('toggleSelectBtn').addEventListener('click', ()=>{
   renderEstoque();
   updateBulkBar();
 });
-
+ 
 // Barra flutuante: remover selecionados
 document.getElementById('bulkDeleteBtn').addEventListener('click', async ()=>{
   if(!ingSelected.size) return;
@@ -674,7 +652,7 @@ document.getElementById('bulkDeleteBtn').addEventListener('click', async ()=>{
     toast("Erro ao remover: "+e.message, true);
   }
 });
-
+ 
 // Cancelar seleção
 document.getElementById('bulkCancelBtn').addEventListener('click', ()=>{
   ingSelectMode = false;
@@ -682,26 +660,10 @@ document.getElementById('bulkCancelBtn').addEventListener('click', ()=>{
   renderEstoque();
   updateBulkBar();
 });
-
+ 
 let editingIngId=null;
 document.getElementById('addIngBtn').addEventListener('click',()=>openIngForm(null));
 document.getElementById('cancelIngBtn').addEventListener('click',()=>{ document.getElementById('ingFormCard').style.display='none'; });
-function calcPacotePreview(){
-  const unid = Number(document.getElementById('ingUnidPacote').value)||0;
-  const custo = Number(document.getElementById('ingCustoPacote').value)||0;
-  const note = document.getElementById('ingCustoUnitCalc');
-  if(unid>0 && custo>0){
-    const perUnit = custo/unid;
-    note.textContent = `→ Custo por unidade: ${fmt(perUnit)} (${custo}/₁${unid})`;
-    // Auto-fill custo field
-    document.getElementById('ingCusto').value = perUnit.toFixed(4);
-  } else {
-    note.textContent = 'O custo por unidade será calculado automaticamente.';
-  }
-}
-document.getElementById('ingUnidPacote').addEventListener('input', calcPacotePreview);
-document.getElementById('ingCustoPacote').addEventListener('input', calcPacotePreview);
-
 function openIngForm(id){
   editingIngId=id;
   const card=document.getElementById('ingFormCard');
@@ -715,29 +677,21 @@ function openIngForm(id){
     document.getElementById('ingEstoque').value=ing.estoque;
     document.getElementById('ingMinimo').value=ing.minimo;
     document.getElementById('ingFornecedor').value=ing.fornecedor||'';
-    document.getElementById('ingUnidPacote').value=ing.unid_pacote||'';
-    document.getElementById('ingCustoPacote').value=ing.custo_pacote||'';
-    calcPacotePreview();
   } else {
     document.getElementById('ingFormTitle').textContent="Novo ingrediente";
-    ['ingNome','ingCusto','ingEstoque','ingMinimo','ingFornecedor','ingUnidPacote','ingCustoPacote'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('ingCustoUnitCalc').textContent='O custo por unidade será calculado automaticamente.';
+    ['ingNome','ingCusto','ingEstoque','ingMinimo','ingFornecedor'].forEach(i=>document.getElementById(i).value='');
   }
   card.scrollIntoView({behavior:'smooth'});
 }
 document.getElementById('saveIngBtn').addEventListener('click', async ()=>{
   const nome=document.getElementById('ingNome').value.trim();
   if(!nome){ toast("Dê um nome ao ingrediente"); return; }
-  const unidPacote = Number(document.getElementById('ingUnidPacote').value)||null;
-  const custoPacote = Number(document.getElementById('ingCustoPacote').value)||null;
   const data={
     nome, unidade:document.getElementById('ingUnidade').value,
     custo:Number(document.getElementById('ingCusto').value)||0,
     estoque:Number(document.getElementById('ingEstoque').value)||0,
     minimo:Number(document.getElementById('ingMinimo').value)||0,
     fornecedor:document.getElementById('ingFornecedor').value.trim(),
-    unid_pacote: unidPacote,
-    custo_pacote: custoPacote,
     updated_at: new Date().toISOString()
   };
   setSyncState("syncing");
@@ -756,7 +710,7 @@ document.getElementById('saveIngBtn').addEventListener('click', async ()=>{
     renderAll();
   } catch(e){ setSyncState("err"); toast("Erro: "+e.message,true); }
 });
-
+ 
 /* ============================================================
    RECEITAS / PREÇO
    ============================================================ */
@@ -775,36 +729,19 @@ function renderRecipeBody(){
   if(!r){ document.getElementById('recipeBody').innerHTML='<div class="empty">Selecione uma receita.</div>'; return; }
   const cost=recipeCost(r);
   const precoVenda = r.preco_venda||r.precoVenda||0;
-
-  // Ingredientes disponíveis para adicionar (que ainda não estão na receita)
-  const ingsNaReceita = new Set((r.ingredientes||[]).map(ri=>ri.ing));
-  const ingsDisponiveis = DB.ingredientes.filter(i=>!ingsNaReceita.has(i.id));
-
   document.getElementById('recipeBody').innerHTML=`
     <table class="mini-table">
-      <thead><tr><th>Ingrediente</th><th>Qtd.</th><th>Custo</th><th></th></tr></thead>
+      <thead><tr><th>Ingrediente</th><th>Qtd.</th><th>Custo</th></tr></thead>
       <tbody>${(r.ingredientes||[]).map(ri=>{
         const ing=DB.ingredientes.find(i=>i.id===ri.ing);
         return `<tr>
           <td>${ing?ing.nome:'—'}</td>
-          <td><input type="number" step="0.1" value="${ri.qtd}" data-ing="${ri.ing}" style="width:70px;padding:4px 6px;" class="qtyEdit"> ${ing?ing.unidade:''}</td>
+          <td><input type="number" step="1" value="${ri.qtd}" data-ing="${ri.ing}" style="width:70px;padding:4px 6px;" class="qtyEdit"> ${ing?ing.unidade:''}</td>
           <td>${ing?fmt(ing.custo*ri.qtd):'—'}</td>
-          <td><button class="btn btn-ghost btn-sm removeIng" data-ing="${ri.ing}" style="padding:4px 8px;color:var(--red-alert);">✕</button></td>
         </tr>`;
       }).join('')}</tbody>
     </table>
-
-    <!-- Adicionar ingrediente à receita -->
-    <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
-      <select id="addIngSelect" style="flex:1;min-width:130px;">
-        <option value="">+ Adicionar ingrediente…</option>
-        ${ingsDisponiveis.map(i=>`<option value="${i.id}">${i.nome} (${i.unidade})</option>`).join('')}
-      </select>
-      <input type="number" id="addIngQtd" placeholder="Qtd." step="0.1" style="width:80px;">
-      <button class="btn btn-primary btn-sm" id="addIngToRecipeBtn">Adicionar</button>
-    </div>
-
-    <div class="row2" style="margin-top:12px;">
+    <div class="row2" style="margin-top:10px;">
       <div><label>Rendimento (fatias)</label><input id="rendInput" type="number" value="${r.rendimento}"></div>
       <div><label>Preço de venda atual (R$)</label><input id="precoInput" type="number" step="0.5" value="${precoVenda}"></div>
     </div>
@@ -817,33 +754,10 @@ function renderRecipeBody(){
     </div>
     <button class="btn btn-primary btn-sm" id="applySuggested" style="margin-top:10px;">Usar preço sugerido</button>
   `;
-
-  // Editar quantidade de ingrediente existente
   document.querySelectorAll('.qtyEdit').forEach(inp=>inp.addEventListener('change', async e=>{
     const ri=(r.ingredientes||[]).find(x=>x.ing===e.target.dataset.ing);
     if(ri){ ri.qtd=Number(e.target.value)||0; await saveReceita(r); renderRecipeBody(); renderFlavorGrid(); }
   }));
-
-  // Remover ingrediente da receita
-  document.querySelectorAll('.removeIng').forEach(btn=>btn.addEventListener('click', async ()=>{
-    const ingId = btn.dataset.ing;
-    r.ingredientes = (r.ingredientes||[]).filter(x=>x.ing!==ingId);
-    await saveReceita(r); renderRecipeBody(); renderFlavorGrid();
-    toast("Ingrediente removido da receita");
-  }));
-
-  // Adicionar ingrediente à receita
-  document.getElementById('addIngToRecipeBtn').addEventListener('click', async ()=>{
-    const ingId = document.getElementById('addIngSelect').value;
-    const qtd = Number(document.getElementById('addIngQtd').value)||0;
-    if(!ingId){ toast("Selecione um ingrediente",true); return; }
-    if(!qtd){ toast("Informe a quantidade",true); return; }
-    if((r.ingredientes||[]).find(x=>x.ing===ingId)){ toast("Ingrediente já está na receita",true); return; }
-    r.ingredientes = [...(r.ingredientes||[]), {ing:ingId, qtd}];
-    await saveReceita(r); renderRecipeBody(); renderFlavorGrid();
-    toast("Ingrediente adicionado à receita ✓");
-  });
-
   document.getElementById('rendInput').addEventListener('change', async e=>{ r.rendimento=Number(e.target.value)||1; await saveReceita(r); renderRecipeBody(); renderFlavorGrid(); });
   document.getElementById('precoInput').addEventListener('change', async e=>{ r.preco_venda=Number(e.target.value)||0; r.precoVenda=r.preco_venda; await saveReceita(r); renderRecipeBody(); renderFlavorGrid(); });
   document.getElementById('applySuggested').addEventListener('click', async ()=>{
@@ -862,7 +776,7 @@ async function saveReceita(r){
     setSyncState("ok");
   } catch(e){ setSyncState("err"); toast("Erro ao salvar receita",true); }
 }
-
+ 
 /* ============================================================
    AJUSTES
    ============================================================ */
@@ -888,46 +802,6 @@ document.getElementById('investTotal').addEventListener('change', async e=>{
   DB.investimento.total=Number(e.target.value)||0;
   setSyncState("syncing"); await setConfig("invest_total",DB.investimento.total); setSyncState("ok"); renderAjustes();
 });
-
-// Calcular alocação automaticamente com base no estoque
-document.getElementById('calcFromStockBtn').addEventListener('click', async ()=>{
-  if(!confirm("Isso vai substituir as alocações atuais pelos custos reais do estoque (quantidade × custo unitário), agrupados por fornecedor. Continuar?")) return;
-
-  // Agrupar ingredientes por fornecedor
-  const grupos = {};
-  DB.ingredientes.forEach(ing=>{
-    const forn = ing.fornecedor?.trim() || "Sem fornecedor";
-    const custo = (ing.custo||0) * (ing.estoque||0);
-    if(!grupos[forn]) grupos[forn] = 0;
-    grupos[forn] += custo;
-  });
-
-  setSyncState("syncing");
-  try{
-    // Deletar alocações antigas
-    for(const it of DB.investimento.itens){
-      await sbDelete("investimento_itens", `id=eq.${it.id}`);
-    }
-    DB.investimento.itens = [];
-
-    // Inserir novas alocações
-    for(const [forn, valor] of Object.entries(grupos)){
-      if(valor <= 0) continue;
-      const novoItem = {id: uid(), item: forn, valor: +valor.toFixed(2)};
-      const rows = await sbInsert("investimento_itens", novoItem);
-      DB.investimento.itens.push(rows[0]||novoItem);
-    }
-
-    // Atualizar total com soma real
-    const totalReal = DB.investimento.itens.reduce((s,i)=>s+Number(i.valor),0);
-    DB.investimento.total = +totalReal.toFixed(2);
-    await setConfig("invest_total", DB.investimento.total);
-
-    setSyncState("ok");
-    toast("Alocação calculada pelo estoque ✓");
-    renderAjustes();
-  } catch(e){ setSyncState("err"); toast("Erro: "+e.message, true); }
-});
 document.getElementById('custosFixos').addEventListener('change', async e=>{
   DB.config.custosFixosPct=Number(e.target.value)||0;
   setSyncState("syncing"); await setConfig("custos_fixos",DB.config.custosFixosPct); setSyncState("ok"); renderRecipeBody();
@@ -948,13 +822,13 @@ document.getElementById('addInvBtn').addEventListener('click', async ()=>{
     setSyncState("ok"); renderAjustes();
   } catch(e){ setSyncState("err"); toast("Erro",true); }
 });
-
+ 
 /* ============================================================
    PAINEL
    ============================================================ */
 let charts={};
 function destroyChart(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } }
-
+ 
 function renderPainel(){
   const fat=DB.vendas.reduce((s,v)=>s+Number(v.subtotal),0);
   const fatiasTot=DB.vendas.reduce((s,v)=>s+v.qtd,0);
@@ -966,7 +840,7 @@ function renderPainel(){
   document.getElementById('kpiLucro').innerHTML=`<span class="${lucro>=0?'pos':'neg'}">${fmt(lucro)}</span>`;
   document.getElementById('kpiFatias').textContent=fatiasTot;
   document.getElementById('kpiRoi').innerHTML=`<span class="${roi>=0?'pos':'neg'}">${roi.toFixed(0)}%</span>`;
-
+ 
   const colors=['#F2544C','#E3A23D','#3E8E5A','#7A5B4C'];
   destroyChart('sabor');
   charts.sabor=new Chart(document.getElementById('chartSabor'),{
@@ -998,66 +872,15 @@ function renderPainel(){
     data:{labels:['Restante','Consumido'],datasets:[{data:[estoqueAtual,Math.max(0,estoqueConsumido)],backgroundColor:['#3E8E5A','#FAD4CE']}]},
     options:{plugins:{legend:{position:'bottom'}}}
   });
-
-  // Gráfico: custo por ingrediente agrupado por fornecedor
-  // Cada ingrediente vira uma barra, colorida pelo fornecedor
-  const ingsComCusto = DB.ingredientes
-    .map(i=>({ nome:i.nome, forn:i.fornecedor?.trim()||'Sem fornecedor', custoTotal:+(i.custo*i.estoque).toFixed(2) }))
-    .filter(i=>i.custoTotal>0)
-    .sort((a,b)=>b.custoTotal-a.custoTotal);
-
-  // Mapear fornecedores para cores distintas
-  const fornecedores=[...new Set(ingsComCusto.map(i=>i.forn))];
-  const paletteForn=['#F2544C','#E3A23D','#3E8E5A','#7A5B4C','#6C63FF','#1DA1A8','#E91E8C'];
-  const fornColor={};
-  fornecedores.forEach((f,idx)=>{ fornColor[f]=paletteForn[idx%paletteForn.length]; });
-
-  destroyChart('fornecedor');
-  if(ingsComCusto.length){
-    charts.fornecedor=new Chart(document.getElementById('chartFornecedor'),{
-      type:'bar',
-      data:{
-        labels:ingsComCusto.map(i=>i.nome),
-        datasets:[{
-          label:'Custo total (R$)',
-          data:ingsComCusto.map(i=>i.custoTotal),
-          backgroundColor:ingsComCusto.map(i=>fornColor[i.forn]),
-          borderRadius:6
-        }]
-      },
-      options:{
-        indexAxis:'y',
-        plugins:{
-          legend:{display:false},
-          tooltip:{callbacks:{
-            afterLabel: ctx => `Fornecedor: ${ingsComCusto[ctx.dataIndex].forn}`
-          }}
-        },
-        scales:{x:{beginAtZero:true,ticks:{callback:v=>'R$'+v}}}
-      }
-    });
-
-    // Legenda manual de fornecedores abaixo do gráfico
-    const legendEl = document.getElementById('fornecedorLegend');
-    if(legendEl){
-      legendEl.innerHTML = fornecedores.map(f=>
-        `<span style="display:inline-flex;align-items:center;gap:4px;margin:3px 6px;font-size:12px;">
-          <span style="width:10px;height:10px;border-radius:3px;background:${fornColor[f]};display:inline-block;"></span>${f}
-        </span>`).join('');
-    }
-  } else {
-    const el=document.getElementById('chartFornecedor');
-    if(el) el.parentElement.innerHTML=`<div class="empty">Cadastre fornecedores nos ingredientes para ver este gráfico.</div>`;
-  }
 }
-
+ 
 /* Export CSV */
 document.getElementById('exportCsv').addEventListener('click',()=>{
   let csv="dia,hora,sabor,quantidade,valor_unitario,desconto,forma_pagamento,subtotal\n";
   DB.vendas.forEach(v=>{ csv+=`${DB.dias[v.dia]},${v.hora},${v.sabor_nome||v.saborNome},${v.qtd},${v.valor_unit||v.valorUnit},${v.desconto},${v.pagamento},${v.subtotal}\n`; });
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='vicio_vendas.csv'; a.click();
 });
-
+ 
 /* ============================================================
    RENDER ALL + BOOT
    ============================================================ */
@@ -1070,7 +893,7 @@ function renderAll(){
   renderEstoque();
   renderRecipeTabs();
 }
-
+ 
 async function boot(){
   try{
     await loadAll();
