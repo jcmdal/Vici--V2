@@ -936,7 +936,18 @@ document.getElementById('margemLucro').addEventListener('change', async e=>{
   DB.config.margemLucroPct=Number(e.target.value)||0;
   setSyncState("syncing"); await setConfig("margem_lucro",DB.config.margemLucroPct); setSyncState("ok"); renderRecipeBody();
 });
-// addInvBtn removido — alocação agora é calculada automaticamente pelo estoque (calcFromStockBtn)
+document.getElementById('addInvBtn').addEventListener('click', async ()=>{
+  const item=document.getElementById('invItem').value.trim();
+  const valor=Number(document.getElementById('invValor').value)||0;
+  if(!item||!valor){ toast("Preencha item e valor"); return; }
+  setSyncState("syncing");
+  try{
+    const rows=await sbInsert("investimento_itens",{id:uid(),item,valor});
+    DB.investimento.itens.push(rows[0]||{id:uid(),item,valor});
+    document.getElementById('invItem').value=''; document.getElementById('invValor').value='';
+    setSyncState("ok"); renderAjustes();
+  } catch(e){ setSyncState("err"); toast("Erro",true); }
+});
 
 /* ============================================================
    PAINEL
