@@ -782,13 +782,12 @@ function renderRecipeBody(){
 
   document.getElementById('recipeBody').innerHTML=`
     <table class="mini-table">
-      <thead><tr><th>Ingrediente</th><th>Qty.</th><th>Unidade</th><th>Custo</th><th></th></tr></thead>
+      <thead><tr><th>Ingrediente</th><th>Qtd.</th><th>Custo</th><th></th></tr></thead>
       <tbody>${(r.ingredientes||[]).map(ri=>{
         const ing=DB.ingredientes.find(i=>i.id===ri.ing);
         return `<tr>
           <td>${ing?ing.nome:'—'}</td>
-          <td><input type="number" step="0.1" value="${ri.qtd}" data-ing="${ri.ing}" style="width:60px;padding:4px 6px;" class="qtyEdit"></td>
-          <td style="color:var(--choc-soft);font-weight:600;font-size:13px;">${ing?ing.unidade:'—'}</td>
+          <td><input type="number" step="0.1" value="${ri.qtd}" data-ing="${ri.ing}" style="width:70px;padding:4px 6px;" class="qtyEdit"> ${ing?ing.unidade:''}</td>
           <td>${ing?fmt(ing.custo*ri.qtd):'—'}</td>
           <td><button class="btn btn-ghost btn-sm removeIng" data-ing="${ri.ing}" style="padding:4px 8px;color:var(--red-alert);">✕</button></td>
         </tr>`;
@@ -797,7 +796,7 @@ function renderRecipeBody(){
 
     <!-- Adicionar ingrediente à receita -->
     <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
-      <select id="addIngSelect" style="flex:1;min-width:150px;">
+      <select id="addIngSelect" style="flex:1;min-width:130px;">
         <option value="">+ Adicionar ingrediente…</option>
         ${ingsDisponiveis.map(i=>`<option value="${i.id}">${i.nome} (${i.unidade})</option>`).join('')}
       </select>
