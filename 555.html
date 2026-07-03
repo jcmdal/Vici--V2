@@ -785,11 +785,10 @@ function renderRecipeBody(){
       <thead><tr><th>Ingrediente</th><th>Qty.</th><th>Unidade</th><th>Custo</th><th></th></tr></thead>
       <tbody>${(r.ingredientes||[]).map(ri=>{
         const ing=DB.ingredientes.find(i=>i.id===ri.ing);
-        const unidadeUsada = ri.unidade || (ing?.unidade || '—');
         return `<tr>
           <td>${ing?ing.nome:'—'}</td>
           <td><input type="number" step="0.1" value="${ri.qtd}" data-ing="${ri.ing}" style="width:60px;padding:4px 6px;" class="qtyEdit"></td>
-          <td style="color:var(--choc-soft);font-weight:600;font-size:13px;">${unidadeUsada}</td>
+          <td style="color:var(--choc-soft);font-weight:600;font-size:13px;">${ing?ing.unidade:'—'}</td>
           <td>${ing?fmt(ing.custo*ri.qtd):'—'}</td>
           <td><button class="btn btn-ghost btn-sm removeIng" data-ing="${ri.ing}" style="padding:4px 8px;color:var(--red-alert);">✕</button></td>
         </tr>`;
@@ -800,15 +799,9 @@ function renderRecipeBody(){
     <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
       <select id="addIngSelect" style="flex:1;min-width:150px;">
         <option value="">+ Adicionar ingrediente…</option>
-        ${ingsDisponiveis.map(i=>`<option value="${i.id}">${i.nome}</option>`).join('')}
+        ${ingsDisponiveis.map(i=>`<option value="${i.id}">${i.nome} (${i.unidade})</option>`).join('')}
       </select>
-      <input type="number" id="addIngQtd" placeholder="Qtd." step="0.1" style="width:70px;">
-      <select id="addIngUnit" style="width:90px;display:none;">
-        <option value="g">g</option>
-        <option value="ml">ml</option>
-        <option value="un">unidade</option>
-      </select>
-      <span id="addIngUnitDisplay" style="min-width:50px;font-weight:600;color:var(--choc-soft);font-size:13px;text-align:center;">—</span>
+      <input type="number" id="addIngQtd" placeholder="Qtd." step="0.1" style="width:80px;">
       <button class="btn btn-primary btn-sm" id="addIngToRecipeBtn">Adicionar</button>
     </div>
 
@@ -841,33 +834,13 @@ function renderRecipeBody(){
   }));
 
   // Adicionar ingrediente à receita
-  document.getElementById('addIngSelect').addEventListener('change', e=>{
-    const ingId = e.target.value;
-    if(!ingId){
-      document.getElementById('addIngUnitDisplay').textContent = '—';
-      document.getElementById('addIngUnit').style.display = 'none';
-      return;
-    }
-    const ing = DB.ingredientes.find(i=>i.id===ingId);
-    if(ing){
-      document.getElementById('addIngUnit').value = ing.unidade;
-      document.getElementById('addIngUnitDisplay').textContent = ing.unidade;
-      document.getElementById('addIngUnit').style.display = 'block';
-    }
-  });
-
-  document.getElementById('addIngUnit').addEventListener('change', e=>{
-    document.getElementById('addIngUnitDisplay').textContent = e.target.value;
-  });
-
   document.getElementById('addIngToRecipeBtn').addEventListener('click', async ()=>{
     const ingId = document.getElementById('addIngSelect').value;
     const qtd = Number(document.getElementById('addIngQtd').value)||0;
-    const unidade = document.getElementById('addIngUnit').value;
     if(!ingId){ toast("Selecione um ingrediente",true); return; }
     if(!qtd){ toast("Informe a quantidade",true); return; }
     if((r.ingredientes||[]).find(x=>x.ing===ingId)){ toast("Ingrediente já está na receita",true); return; }
-    r.ingredientes = [...(r.ingredientes||[]), {ing:ingId, qtd, unidade}];
+    r.ingredientes = [...(r.ingredientes||[]), {ing:ingId, qtd}];
     await saveReceita(r); renderRecipeBody(); renderFlavorGrid();
     toast("Ingrediente adicionado à receita ✓");
   });
