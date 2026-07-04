@@ -208,24 +208,11 @@ input:focus,select:focus{outline:none;border-color:var(--coral);}
       <h2 id="ingFormTitle">Novo ingrediente</h2>
       <label>Nome</label><input id="ingNome" placeholder="Ex: Chocolate 70%">
       <div class="row2">
-        <div><label>Unidade base (usada no estoque e nas receitas)</label><select id="ingUnidade"><option value="g">g (gramas)</option><option value="ml">ml (mililitros)</option><option value="un">un (unidade)</option></select></div>
-        <div><label>Custo por unidade base (R$)</label><input id="ingCusto" type="number" step="0.0001" placeholder="0,00"></div>
+        <div><label>Unidade</label><select id="ingUnidade"><option value="g">g</option><option value="ml">ml</option><option value="un">unidade</option></select></div>
+        <div><label>Custo por unidade (R$)</label><input id="ingCusto" type="number" step="0.001" placeholder="0,00"></div>
       </div>
-
-      <!-- Helper de conversão: evita erro de digitar preço na unidade errada -->
-      <div style="margin-top:10px;padding:12px;background:var(--cream);border-radius:12px;border:1px dashed var(--coral);">
-        <label style="margin:0 0 4px;color:var(--coral-dark);">🧮 Prefere calcular pelo preço que pagou? (opcional)</label>
-        <div class="small-note" style="margin:0 0 8px;">Ex: comprou 2 litros de leite por R$ 10,00 → a gente calcula o custo por ml sozinho.</div>
-        <div class="row3">
-          <div><label style="margin:0 0 4px;">Comprei</label><input id="convQtd" type="number" step="0.01" placeholder="Ex: 2"></div>
-          <div><label style="margin:0 0 4px;">Em</label><select id="convUnidade"></select></div>
-          <div><label style="margin:0 0 4px;">Paguei R$</label><input id="convPreco" type="number" step="0.01" placeholder="Ex: 10,00"></div>
-        </div>
-        <button class="btn btn-outline btn-sm" id="calcCustoBtn" style="margin-top:8px;width:100%;">Calcular custo por unidade base ↓</button>
-      </div>
-
       <div class="row2">
-        <div><label>Estoque atual (na unidade base)</label><input id="ingEstoque" type="number" step="0.1" placeholder="0"></div>
+        <div><label>Estoque atual</label><input id="ingEstoque" type="number" step="0.1" placeholder="0"></div>
         <div><label>Estoque mínimo (alerta)</label><input id="ingMinimo" type="number" step="0.1" placeholder="0"></div>
       </div>
       <label>Fornecedor (opcional)</label><input id="ingFornecedor" placeholder="Ex: Mercado São José">
@@ -715,34 +702,6 @@ function calcPacotePreview(){
 document.getElementById('ingUnidPacote').addEventListener('input', calcPacotePreview);
 document.getElementById('ingCustoPacote').addEventListener('input', calcPacotePreview);
 
-/* ============================================================
-   CONVERSÃO DE UNIDADES — evita erro de digitar custo na unidade errada
-   ============================================================ */
-const UNIT_CONVERSIONS = {
-  g:  [ {value:'g',  label:'g (gramas)',      factor:1},    {value:'kg', label:'kg (quilos)', factor:1000} ],
-  ml: [ {value:'ml', label:'ml (mililitros)', factor:1},    {value:'l',  label:'L (litros)',  factor:1000} ],
-  un: [ {value:'un', label:'unidade(s)',      factor:1} ]
-};
-
-function populateConvUnidade(){
-  const baseUnit = document.getElementById('ingUnidade').value;
-  const sel = document.getElementById('convUnidade');
-  const opts = UNIT_CONVERSIONS[baseUnit] || UNIT_CONVERSIONS.g;
-  sel.innerHTML = opts.map(o=>`<option value="${o.factor}">${o.label}</option>`).join('');
-}
-document.getElementById('ingUnidade').addEventListener('change', populateConvUnidade);
-
-document.getElementById('calcCustoBtn').addEventListener('click', ()=>{
-  const qtdComprada = Number(document.getElementById('convQtd').value)||0;
-  const fator = Number(document.getElementById('convUnidade').value)||1;
-  const precoPago = Number(document.getElementById('convPreco').value)||0;
-  if(!qtdComprada || !precoPago){ toast("Preencha a quantidade comprada e o preço pago", true); return; }
-  const qtdEmUnidBase = qtdComprada * fator;
-  const custoPorUnidBase = precoPago / qtdEmUnidBase;
-  document.getElementById('ingCusto').value = custoPorUnidBase.toFixed(5);
-  toast(`Custo calculado: ${fmt(custoPorUnidBase)} por unidade base ✓`);
-});
-
 function openIngForm(id){
   editingIngId=id;
   const card=document.getElementById('ingFormCard');
@@ -763,11 +722,7 @@ function openIngForm(id){
     document.getElementById('ingFormTitle').textContent="Novo ingrediente";
     ['ingNome','ingCusto','ingEstoque','ingMinimo','ingFornecedor','ingUnidPacote','ingCustoPacote'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('ingCustoUnitCalc').textContent='O custo por unidade será calculado automaticamente.';
-    document.getElementById('ingUnidade').value='g';
   }
-  populateConvUnidade();
-  document.getElementById('convQtd').value='';
-  document.getElementById('convPreco').value='';
   card.scrollIntoView({behavior:'smooth'});
 }
 document.getElementById('saveIngBtn').addEventListener('click', async ()=>{
@@ -827,31 +782,34 @@ function renderRecipeBody(){
 
   document.getElementById('recipeBody').innerHTML=`
     <table class="mini-table">
-      <thead><tr><th>Ingrediente</th><th>Qty. (unid. base)</th><th>Custo</th><th></th></tr></thead>
+      <thead><tr><th>Ingrediente</th><th>Qty.</th><th>Unidade</th><th>Custo</th><th></th></tr></thead>
       <tbody>${(r.ingredientes||[]).map(ri=>{
         const ing=DB.ingredientes.find(i=>i.id===ri.ing);
+        const unidadeUsada = ri.unidade || (ing?.unidade || '—');
         return `<tr>
           <td>${ing?ing.nome:'—'}</td>
-          <td><input type="number" step="0.1" value="${ri.qtd}" data-ing="${ri.ing}" style="width:70px;padding:4px 6px;" class="qtyEdit"> <span style="color:var(--choc-soft);font-weight:600;font-size:12.5px;">${ing?ing.unidade:''}</span></td>
+          <td><input type="number" step="0.1" value="${ri.qtd}" data-ing="${ri.ing}" style="width:60px;padding:4px 6px;" class="qtyEdit"></td>
+          <td style="color:var(--choc-soft);font-weight:600;font-size:13px;">${unidadeUsada}</td>
           <td>${ing?fmt(ing.custo*ri.qtd):'—'}</td>
           <td><button class="btn btn-ghost btn-sm removeIng" data-ing="${ri.ing}" style="padding:4px 8px;color:var(--red-alert);">✕</button></td>
         </tr>`;
       }).join('')}</tbody>
     </table>
 
-    <!-- Adicionar ingrediente à receita, com conversão real de unidade -->
-    <div style="margin-top:12px;padding:12px;background:var(--cream);border-radius:12px;border:1px dashed var(--gold);">
-      <label style="margin:0 0 8px;color:var(--gold);">+ Adicionar ingrediente à receita</label>
-      <select id="addIngSelect" style="margin-bottom:8px;">
-        <option value="">Selecione o ingrediente…</option>
-        ${ingsDisponiveis.map(i=>`<option value="${i.id}">${i.nome} (base: ${i.unidade})</option>`).join('')}
+    <!-- Adicionar ingrediente à receita -->
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+      <select id="addIngSelect" style="flex:1;min-width:150px;">
+        <option value="">+ Adicionar ingrediente…</option>
+        ${ingsDisponiveis.map(i=>`<option value="${i.id}">${i.nome}</option>`).join('')}
       </select>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input type="number" id="addIngQtd" placeholder="Quantidade" step="0.01" style="width:110px;">
-        <select id="addIngUnit" style="width:130px;"></select>
-        <button class="btn btn-primary btn-sm" id="addIngToRecipeBtn" style="flex:1;min-width:100px;">Adicionar</button>
-      </div>
-      <div class="small-note" id="addIngConvertPreview"></div>
+      <input type="number" id="addIngQtd" placeholder="Qtd." step="0.1" style="width:70px;">
+      <select id="addIngUnit" style="width:90px;display:none;">
+        <option value="g">g</option>
+        <option value="ml">ml</option>
+        <option value="un">unidade</option>
+      </select>
+      <span id="addIngUnitDisplay" style="min-width:50px;font-weight:600;color:var(--choc-soft);font-size:13px;text-align:center;">—</span>
+      <button class="btn btn-primary btn-sm" id="addIngToRecipeBtn">Adicionar</button>
     </div>
 
     <div class="row2" style="margin-top:12px;">
@@ -882,41 +840,34 @@ function renderRecipeBody(){
     toast("Ingrediente removido da receita");
   }));
 
-  // Atualiza as opções de unidade (com conversão real) conforme o ingrediente selecionado
-  function updateAddIngUnitOptions(){
-    const ingId = document.getElementById('addIngSelect').value;
-    const unitSel = document.getElementById('addIngUnit');
-    if(!ingId){ unitSel.innerHTML=''; document.getElementById('addIngConvertPreview').textContent=''; return; }
+  // Adicionar ingrediente à receita
+  document.getElementById('addIngSelect').addEventListener('change', e=>{
+    const ingId = e.target.value;
+    if(!ingId){
+      document.getElementById('addIngUnitDisplay').textContent = '—';
+      document.getElementById('addIngUnit').style.display = 'none';
+      return;
+    }
     const ing = DB.ingredientes.find(i=>i.id===ingId);
-    const opts = UNIT_CONVERSIONS[ing.unidade] || UNIT_CONVERSIONS.g;
-    unitSel.innerHTML = opts.map(o=>`<option value="${o.factor}">${o.label}</option>`).join('');
-    updateConvertPreview();
-  }
-  function updateConvertPreview(){
-    const ingId = document.getElementById('addIngSelect').value;
-    const qtd = Number(document.getElementById('addIngQtd').value)||0;
-    const fator = Number(document.getElementById('addIngUnit').value)||1;
-    const preview = document.getElementById('addIngConvertPreview');
-    if(!ingId || !qtd){ preview.textContent=''; return; }
-    const ing = DB.ingredientes.find(i=>i.id===ingId);
-    const qtdBase = qtd*fator;
-    preview.innerHTML = `→ Isso equivale a <strong>${qtdBase.toLocaleString('pt-BR')} ${ing.unidade}</strong> · custo estimado: <strong>${fmt(qtdBase*ing.custo)}</strong>`;
-  }
-  document.getElementById('addIngSelect').addEventListener('change', updateAddIngUnitOptions);
-  document.getElementById('addIngQtd').addEventListener('input', updateConvertPreview);
-  document.getElementById('addIngUnit').addEventListener('change', updateConvertPreview);
-  updateAddIngUnitOptions();
+    if(ing){
+      document.getElementById('addIngUnit').value = ing.unidade;
+      document.getElementById('addIngUnitDisplay').textContent = ing.unidade;
+      document.getElementById('addIngUnit').style.display = 'block';
+    }
+  });
 
-  // Adicionar ingrediente à receita (converte para a unidade base do ingrediente)
+  document.getElementById('addIngUnit').addEventListener('change', e=>{
+    document.getElementById('addIngUnitDisplay').textContent = e.target.value;
+  });
+
   document.getElementById('addIngToRecipeBtn').addEventListener('click', async ()=>{
     const ingId = document.getElementById('addIngSelect').value;
-    const qtdDigitada = Number(document.getElementById('addIngQtd').value)||0;
-    const fator = Number(document.getElementById('addIngUnit').value)||1;
+    const qtd = Number(document.getElementById('addIngQtd').value)||0;
+    const unidade = document.getElementById('addIngUnit').value;
     if(!ingId){ toast("Selecione um ingrediente",true); return; }
-    if(!qtdDigitada){ toast("Informe a quantidade",true); return; }
+    if(!qtd){ toast("Informe a quantidade",true); return; }
     if((r.ingredientes||[]).find(x=>x.ing===ingId)){ toast("Ingrediente já está na receita",true); return; }
-    const qtdEmUnidBase = qtdDigitada * fator; // sempre convertido para a unidade base (g/ml/un)
-    r.ingredientes = [...(r.ingredientes||[]), {ing:ingId, qtd:qtdEmUnidBase}];
+    r.ingredientes = [...(r.ingredientes||[]), {ing:ingId, qtd, unidade}];
     await saveReceita(r); renderRecipeBody(); renderFlavorGrid();
     toast("Ingrediente adicionado à receita ✓");
   });
