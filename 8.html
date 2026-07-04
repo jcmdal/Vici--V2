@@ -858,7 +858,7 @@ document.getElementById('confirmNewRecipeBtn').addEventListener('click', async (
       nome,
       rendimento,
       preco_venda,
-      ingredientes: []
+      ingredientes: JSON.stringify([])
     };
     const rows = await sbInsert("receitas", novoSabor);
     const salvo = rows[0] || novoSabor;
@@ -1017,7 +1017,7 @@ async function saveReceita(r){
     await sbUpdate("receitas",`id=eq.${r.id}`,{
       nome:r.nome, rendimento:r.rendimento,
       preco_venda:r.preco_venda||r.precoVenda||0,
-      ingredientes:r.ingredientes
+      ingredientes:JSON.stringify(r.ingredientes)
     });
     setSyncState("ok");
   } catch(e){ setSyncState("err"); toast("Erro ao salvar receita",true); }
